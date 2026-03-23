@@ -25,7 +25,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "packege": "com.flint.doorpay",
+      "package": "com.flint.doorpay",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
