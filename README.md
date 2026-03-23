@@ -5,7 +5,7 @@
 ## 🧩 주요 기능
 
 ## 📦 기술 스택
-- **Frontend**: 
+- **Frontend**: React Native+Expo, TypeScript
 - **Backend/Server**: 
 - **AI/ML**: 
 - **DB**: 
