@@ -1,33 +1,66 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AuthInput } from '../../components/AuthInput';
 import { PrimaryButton, GoogleButton } from '../../components/Buttons';
 import { HeaderWithBack } from '../../components/HeaderWithBack';
+import auth from '@react-native-firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export default function LoginScreen() {
   const router = useRouter();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleEmailLogin = async () => {
+    try {
+      await auth().signInWithEmailAndPassword(email, password);
+      router.replace('./(tabs)/home');
+    } catch (error: any) {
+      Alert.alert("로그인 실패", "이메일 또는 비밀번호를 확인해주세요.");
+    }
+  };
+
+  const onGoogleButtonPress = async () => {
+    try {
+      // 구조 분해 할당으로 data를 직접 가져오면 더 깔끔함
+      const { data } = await GoogleSignin.signIn();
+      
+      if (!data?.idToken) {
+        Alert.alert("에러", "구글 인증 정보를 가져올 수 없습니다.");
+        return;
+      }
+
+      const googleCredential = auth.GoogleAuthProvider.credential(data.idToken);
+      await auth().signInWithCredential(googleCredential);
+      
+      router.replace('./(tabs)/home');
+    } catch (error: any) {
+      console.log("구글 로그인 에러:", error);
+    }
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: '#FFF' }}>
       <HeaderWithBack title="로그인" />
       <View style={{ padding: 20 }}>
-        <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>이메일</Text>
-        <AuthInput placeholder="example@example.com" />
-        <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>비밀번호</Text>
-        <AuthInput secureTextEntry />
+        <Text style={styles.label}>이메일</Text>
+        <AuthInput placeholder="example@example.com" value={email} onChangeText={setEmail} />
+        <Text style={styles.label}>비밀번호</Text>
+        <AuthInput secureTextEntry value={password} onChangeText={setPassword} />
         
-        <TouchableOpacity onPress={() => router.push('./reset-password')} style={{ alignSelf: 'flex-end' }}>
+        <TouchableOpacity onPress={() => router.push('./reset-password')} style={{ alignSelf: 'flex-end', marginVertical: 10 }}>
           <Text style={{ color: '#888' }}>비밀번호 재설정</Text>
         </TouchableOpacity>
 
-        <PrimaryButton title="이메일로 로그인" onPress={() => {}} />
+        <PrimaryButton title="이메일로 로그인" onPress={handleEmailLogin} />
         
         <View style={styles.divider}>
-          <View style={styles.line} />
-          <Text style={styles.dividerText}>또는</Text>
-          <View style={styles.line} />
+          <View style={styles.line} /><Text style={styles.dividerText}>또는</Text><View style={styles.line} />
         </View>
 
-        <GoogleButton title="Sign in with Google" onPress={() => {}} />
+        <GoogleButton title="Sign in with Google" onPress={onGoogleButtonPress} />
       </View>
 
       <View style={styles.footer}>
@@ -41,7 +74,12 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-    divider: {
+  label: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+    marginTop: 10
+  },
+  divider: {
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 20

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AuthInput } from '../../components/AuthInput';
 import { PrimaryButton, GoogleButton } from '../../components/Buttons';
 import { HeaderWithBack } from '../../components/HeaderWithBack';
+import auth from '@react-native-firebase/auth';
+import { authApi } from '../../services/authApi';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -15,9 +18,50 @@ export default function SignupScreen() {
   const [phone, setPhone] = useState('');
   const [birth, setBirth] = useState('');
 
-  const handleSignup = () => {
-    // TODO: Firebase 회원가입 로직 연결
-    console.log("회원가입 시도:", { nickname, email, phone });
+  const handleSignup = async () => {
+    if (!email || !password || !nickname) return Alert.alert("알림", "필수 항목을 입력해주세요.");
+    try {
+      // 1. Firebase Auth 계정 생성 (서버 onUserCreated 자동 실행)
+      await auth().createUserWithEmailAndPassword(email, password);
+
+      // 2. 추가 정보 업데이트 API 호출
+      await authApi.updateUserProfile({
+        nickname: nickname,
+        phone: phone,
+        birth: birth
+      });
+
+      Alert.alert("성공", "회원가입 완료!");
+      router.replace('./(tabs)/home');
+    } catch (error: any) {
+      Alert.alert("회원가입 에러", error.message);
+    }
+  };
+
+  const onGoogleSignup = async () => {
+    try {
+      // 1. 구글 로그인 시도
+      const { data } = await GoogleSignin.signIn();
+      const idToken = data?.idToken;
+
+      if (!idToken) throw new Error("ID Token missing");
+
+      // 2. Firebase 로그인
+      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const userCredential = await auth().signInWithCredential(googleCredential);
+      
+      // 3. 만약 구글 로그인이 처음이라면 백엔드 API를 통해 프로필 초기화 가능
+      // (백엔드의 onUserCreated 코드가 실행되지만, 별명을 구글 이름으로 바꾸고 싶다면 호출)
+      await authApi.updateUserProfile({
+        nickname: userCredential.user.displayName || 'User',
+        phone: '',
+        birth: ''
+      });
+
+      router.replace('./(tabs)/home');
+    } catch (error: any) {
+      console.log("구글 회원가입 에러:", error);
+    }
   };
 
   return (
