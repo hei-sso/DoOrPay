@@ -1,16 +1,16 @@
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
+const functions = require("firebase-functions/v1");
+const { initializeApp } = require("firebase-admin/app");
 
-admin.initializeApp();
+initializeApp();
 
 // triggers
-const { onUserCreated } = require("./triggers/onUserCreated");
+const { onUserCreated } = require("./src/triggers/onUserCreated");
 
 // users
-const { updateUserProfile } = require("./users/updateUserProfile");
+const { updateUserProfile } = require("./src/users/updateUserProfile");
 
 // goals
-const { createGoal } = require("./goals/createGoal");
+const { createGoal } = require("./src/goals/createGoal");
 
 // health check
 exports.checkHealth = functions.https.onRequest((req, res) => {

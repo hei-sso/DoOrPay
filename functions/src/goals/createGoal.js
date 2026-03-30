@@ -1,7 +1,8 @@
-const functions = require("firebase-functions");
+const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
+const { getFirestore, Timestamp } = require("firebase-admin/firestore");
 
-const db = admin.firestore();
+const db = getFirestore();
 
 exports.createGoal = functions
   .region("asia-northeast3")
@@ -34,7 +35,7 @@ exports.createGoal = functions
         status: "active",
         startDate,
         endDate,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: Timestamp.now(),
       });
 
       return res.status(200).json({ message: "Goal created" });

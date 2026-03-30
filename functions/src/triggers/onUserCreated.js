@@ -1,7 +1,7 @@
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
+const functions = require("firebase-functions/v1");
+const { getFirestore, Timestamp } = require("firebase-admin/firestore");
 
-const db = admin.firestore();
+const db = getFirestore();
 
 exports.onUserCreated = functions
   .region("asia-northeast3")
@@ -10,7 +10,7 @@ exports.onUserCreated = functions
     const { uid, email, providerData } = user;
 
     const userRef = db.collection("users").doc(uid);
-    const walletRef = db.collection("wallets").doc(uid);
+    const now = Timestamp.now();
 
     await db.runTransaction(async (tx) => {
       const userDoc = await tx.get(userRef);
@@ -19,22 +19,20 @@ exports.onUserCreated = functions
         tx.set(userRef, {
           uid,
           email: email || "",
-          username: "",
+          nickname: "",
           phone: "",
           birth: "",
           authProvider: providerData?.[0]?.providerId || "unknown",
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          wallet: {
+            balance: 100,
+            locked: 0,
+          },
+          createdAt: now,
+          updatedAt: now,
         });
       }
-
-      tx.set(walletRef, {
-        uid,
-        totalBalance: 0,
-        lockedBalance: 0,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
     });
+
 
     console.log("User initialized:", uid);
   });

@@ -1,7 +1,8 @@
-const functions = require("firebase-functions");
+const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
+const { getFirestore, Timestamp } = require("firebase-admin/firestore");
 
-const db = admin.firestore();
+const db = getFirestore();
 
 exports.updateUserProfile = functions
   .region("asia-northeast3")
@@ -20,10 +21,10 @@ exports.updateUserProfile = functions
       const { nickname, phone, birth } = req.body;
 
       await db.collection("users").doc(uid).update({
-        username: nickname || "",
+        nickname: nickname || "",
         phone: phone || "",
         birth: birth || "",
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: Timestamp.now(),
       });
 
       return res.status(200).json({ message: "Profile updated" });
