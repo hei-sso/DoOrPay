@@ -9,14 +9,13 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export default function LoginScreen() {
   const router = useRouter();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleEmailLogin = async () => {
     try {
       await auth().signInWithEmailAndPassword(email, password);
-      router.replace('./(tabs)/home');
+      router.replace('/(tabs)/home');
     } catch (error: any) {
       Alert.alert("로그인 실패", "이메일 또는 비밀번호를 확인해주세요.");
     }
@@ -24,18 +23,14 @@ export default function LoginScreen() {
 
   const onGoogleButtonPress = async () => {
     try {
-      // 구조 분해 할당으로 data를 직접 가져오면 더 깔끔함
       const { data } = await GoogleSignin.signIn();
-      
       if (!data?.idToken) {
         Alert.alert("에러", "구글 인증 정보를 가져올 수 없습니다.");
         return;
       }
-
       const googleCredential = auth.GoogleAuthProvider.credential(data.idToken);
       await auth().signInWithCredential(googleCredential);
-      
-      router.replace('./(tabs)/home');
+      router.replace('/(tabs)/home');
     } catch (error: any) {
       console.log("구글 로그인 에러:", error);
     }
@@ -61,6 +56,14 @@ export default function LoginScreen() {
         </View>
 
         <GoogleButton title="Sign in with Google" onPress={onGoogleButtonPress} />
+
+        {/* --- 개발용 로그인 없이 진행 버튼 추가 --- */}
+        <TouchableOpacity 
+          onPress={() => router.replace('/(tabs)/home')} 
+          style={styles.devButton}
+        >
+          <Text style={styles.devButtonText}>개발용: 로그인 없이 진행</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.footer}>
@@ -84,8 +87,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 20
   },
-  line: {
-    flex: 1,
+  line: { flex: 1,
     height: 1,
     backgroundColor: '#EEE'
   },
@@ -94,7 +96,7 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 14
   },
-    footer: {
+  footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 25
@@ -107,5 +109,20 @@ const styles = StyleSheet.create({
     color: '#3F51B5',
     fontWeight: 'bold',
     fontSize: 15
+  },
+  // 개발용 버튼 스타일
+  devButton: {
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: '#F2F4F6',
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E8EB',
+  },
+  devButtonText: {
+    color: '#4E5968',
+    fontWeight: '600',
+    fontSize: 13
   }
 });
