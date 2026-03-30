@@ -1,69 +1,43 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AuthInput } from '../../components/AuthInput';
 import { PrimaryButton } from '../../components/Buttons';
 import { HeaderWithBack } from '../../components/HeaderWithBack';
+import auth from '@react-native-firebase/auth';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handlePasswordChange = () => {
-    // TODO: Firebase 비밀번호 재설정 로직 연결
-    console.log("비밀번호 변경 시도:", email);
-    alert("비밀번호 변경 요청이 전송되었습니다.");
-    router.back(); // 변경 후 이전 화면(로그인)으로 이동
+  const handlePasswordReset = async () => {
+    if (!email) return Alert.alert("알림", "이메일을 입력해주세요.");
+    try {
+      await auth().sendPasswordResetEmail(email);
+      Alert.alert("성공", "비밀번호 재설정 이메일이 발송되었습니다.");
+      router.back();
+    } catch (error: any) {
+      Alert.alert("에러", error.message);
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* 뒤로가기 버튼이 포함된 헤더 */}
       <HeaderWithBack title="비밀번호 재설정" />
-
       <View style={styles.content}>
-        {/* 이메일 입력 및 인증 버튼 */}
         <Text style={styles.label}>이메일</Text>
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <AuthInput 
-              placeholder="example@example.com" 
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-            />
-          </View>
-          <TouchableOpacity 
-            style={styles.verifyBtn} 
-            onPress={() => alert("인증 메일이 발송되었습니다.")}
-          >
-            <Text style={styles.verifyBtnText}>인증</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 새 비밀번호 입력 */}
-        <Text style={styles.label}>새 비밀번호</Text>
         <AuthInput 
-          secureTextEntry 
-          placeholder="********"
-          value={newPassword}
-          onChangeText={setNewPassword}
+          placeholder="example@example.com" 
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
         />
+        <Text style={styles.infoText}>
+          가입하신 이메일을 입력하시면 비밀번호 재설정 링크를 보내드립니다.
+        </Text>
 
-        {/* 새 비밀번호 확인 */}
-        <Text style={styles.label}>새 비밀번호 확인</Text>
-        <AuthInput 
-          secureTextEntry 
-          placeholder="********"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
-
-        {/* 비밀번호 변경 버튼 */}
         <View style={{ marginTop: 20 }}>
-          <PrimaryButton title="비밀번호 변경" onPress={handlePasswordChange} />
+          <PrimaryButton title="재설정 메일 보내기" onPress={handlePasswordReset} />
         </View>
       </View>
     </View>
@@ -84,6 +58,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 8
+  },
+  infoText: { 
+    fontSize: 13, 
+    color: '#888', 
+    marginTop: 10, 
+    lineHeight: 18 
   },
   row: {
     flexDirection: 'row',
