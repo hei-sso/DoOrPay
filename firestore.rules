@@ -1,29 +1,4 @@
 rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    
-    // 1. 공통: 인증된 사용자만 읽기 가능
-    match /{document=**} {
-      allow read: if request.auth != null;
-    }
-
-    // 2. 유저 정보: 본인 것만 생성/수정
-    match /users/{userId} {
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // 3. 지갑: 읽기 전용 (수정은 서버/Functions에서만 가능하도록 차단)
-    match /wallets/{walletId} {
-      allow write: if false;
-    }
-
-    // 4. 인증/목표: 본인 데이터만 생성
-    match /verifications/{vId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-    }
-    
-    match /goals/{goalId} {
-      allow write: if request.auth != null && request.resource.data.userId == request.auth.uid;
 
 service cloud.firestore {
   match /databases/{database}/documents {
