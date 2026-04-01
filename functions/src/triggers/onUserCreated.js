@@ -24,7 +24,7 @@ exports.onUserCreated = functions
           birth: "",
           authProvider: providerData?.[0]?.providerId || "unknown",
           wallet: {
-            balance: 100,
+            balance: 0,
             locked: 0,
           },
           createdAt: now,
