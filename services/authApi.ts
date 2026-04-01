@@ -3,7 +3,7 @@ import auth from '@react-native-firebase/auth';
 const BASE_URL = 'https://asia-northeast3-YOUR_PROJECT_ID.cloudfunctions.net'; // 임시
 
 export const authApi = {
-  // 프로필 정보 업데이트 (설계서 규격 준수)
+  // 프로필 정보 업데이트
   updateUserProfile: async (data: { nickname: string; phone: string; birth: string }) => {
     const user = auth().currentUser;
     if (!user) throw new Error("로그인이 필요합니다.");
@@ -17,7 +17,7 @@ export const authApi = {
         'Authorization': `Bearer ${idToken}`
       },
       body: JSON.stringify({
-        nickname: data.nickname, // 설계서 필드명 nickname 사용
+        nickname: data.nickname,
         phone: data.phone,
         birth: data.birth
       }),
