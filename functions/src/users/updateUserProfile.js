@@ -1,7 +1,12 @@
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
-const { getFirestore, Timestamp } = require("firebase-admin/firestore");
 
+// 초기화 안전장치
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+const { getFirestore, Timestamp } = require("firebase-admin/firestore");
 const db = getFirestore();
 
 exports.updateUserProfile = functions
@@ -20,12 +25,12 @@ exports.updateUserProfile = functions
 
       const { nickname, phone, birth } = req.body;
 
-      await db.collection("users").doc(uid).update({
+      await db.collection("users").doc(uid).set({
         nickname: nickname || "",
         phone: phone || "",
         birth: birth || "",
         updatedAt: Timestamp.now(),
-      });
+      }, { merge: true });
 
       return res.status(200).json({ message: "Profile updated" });
     } catch (error) {
