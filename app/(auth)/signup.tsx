@@ -10,7 +10,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export default function SignupScreen() {
   const router = useRouter();
-  
+
   // 상태 관리
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
@@ -21,7 +21,7 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     if (!email || !password || !nickname) return Alert.alert("알림", "필수 항목을 입력해주세요.");
     try {
-      // 1. Firebase Auth 계정 생성 (서버 onUserCreated 자동 실행)
+      // 1. Firebase Auth 계정 생성
       await auth().createUserWithEmailAndPassword(email, password);
 
       // 2. 추가 정보 업데이트 API 호출
@@ -49,9 +49,9 @@ export default function SignupScreen() {
       // 2. Firebase 로그인
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
       const userCredential = await auth().signInWithCredential(googleCredential);
-      
+
       // 3. 만약 구글 로그인이 처음이라면 백엔드 API를 통해 프로필 초기화 가능
-      // (백엔드의 onUserCreated 코드가 실행되지만, 별명을 구글 이름으로 바꾸고 싶다면 호출)
+      // (백엔드의 onUserCreated 코드가 실행되지만, 별명을 구글 이름으로 바꾸고 싶다면 호출)      
       await authApi.updateUserProfile({
         nickname: userCredential.user.displayName || 'User',
         phone: '',
@@ -76,53 +76,30 @@ export default function SignupScreen() {
         <View style={styles.form}>
           {/* 별명 */}
           <Text style={styles.label}>별명</Text>
-          <AuthInput 
-            placeholder="doorpay" 
-            value={nickname}
-            onChangeText={setNickname}
-          />
+          <AuthInput placeholder="doorpay" value={nickname} onChangeText={setNickname} />
 
-          {/* 이메일 + 인증 버튼 */}
+          {/* 이메일 + 인증 버튼 */}          
           <Text style={styles.label}>이메일</Text>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <AuthInput 
-                placeholder="example@example.com" 
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-              />
+              <AuthInput placeholder="example@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
             </View>
-            <TouchableOpacity style={styles.verifyBtn}>
+            <TouchableOpacity style={styles.verifyBtn} onPress={() => Alert.alert('알림', '인증 기능은 준비중입니다.')}>
               <Text style={styles.verifyBtnText}>인증</Text>
             </TouchableOpacity>
           </View>
 
           {/* 비밀번호 */}
           <Text style={styles.label}>비밀번호</Text>
-          <AuthInput 
-            secureTextEntry 
-            placeholder="**********"
-            value={password}
-            onChangeText={setPassword}
-          />
+          <AuthInput secureTextEntry placeholder="**********" value={password} onChangeText={setPassword} />
 
           {/* 전화번호 */}
           <Text style={styles.label}>전화번호</Text>
-          <AuthInput 
-            placeholder="010-1234-5678" 
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
+          <AuthInput placeholder="010-1234-5678" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
 
           {/* 생년월일 */}
           <Text style={styles.label}>생년월일</Text>
-          <AuthInput 
-            placeholder="DD / MM / YYYY" 
-            value={birth}
-            onChangeText={setBirth}
-          />
+          <AuthInput placeholder="DD / MM / YYYY" value={birth} onChangeText={setBirth} />
 
           {/* 이용약관 안내 */}
           <View style={styles.termsContainer}>
@@ -136,13 +113,11 @@ export default function SignupScreen() {
           <PrimaryButton title="회원가입" onPress={handleSignup} />
 
           <View style={styles.divider}>
-            <View style={styles.line} />
-            <Text style={styles.dividerText}>또는</Text>
-            <View style={styles.line} />
+            <View style={styles.line} /><Text style={styles.dividerText}>또는</Text><View style={styles.line} />
           </View>
 
           {/* 구글 회원가입 */}
-          <GoogleButton title="Sign up with Google" onPress={() => {}} />
+          <GoogleButton title="Sign up with Google" onPress={onGoogleSignup} />
 
           {/* 로그인 이동 푸터 */}
           <View style={styles.footer}>

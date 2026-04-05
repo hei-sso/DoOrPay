@@ -1,9 +1,12 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
-  const Menu = ({ icon, title, color = '#333' }: any) => (
-    <TouchableOpacity style={styles.menuItem}>
+  const router = useRouter();
+
+  const Menu = ({ icon, title, color = '#333', onPress }: any) => (
+    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
       <View style={styles.menuLeft}>
         <Ionicons name={icon} size={20} color={color} />
         <Text style={[styles.menuText, { color }]}>{title}</Text>
@@ -23,8 +26,7 @@ export default function ProfileScreen() {
       <View style={styles.menuList}>
         <Menu icon="person-outline" title="프로필 수정" />
         <Menu icon="trophy-outline" title="성공한 챌린지" />
-        <Menu icon="settings-outline" title="설정" />
-        <View style={{ height: 20 }} />
+        <Menu icon="settings-outline" title="설정" onPress={() => router.push('/settings')} />
         <Menu icon="log-out-outline" title="로그아웃" color="#FF5252" />
       </View>
     </View>

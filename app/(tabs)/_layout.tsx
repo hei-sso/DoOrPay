@@ -40,6 +40,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="goal"
+        options={{
+          title: '목표',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "flag" : "flag-outline"} size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="wallet"
         options={{
           title: '지갑',

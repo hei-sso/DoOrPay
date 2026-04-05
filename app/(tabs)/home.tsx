@@ -1,48 +1,61 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
+  const router = useRouter();
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      {/* 상단 프로필 & 알림 */}
-      <View style={styles.topBar}>
-        <View>
-          <Text style={styles.userTitle}>김OO님의</Text>
-          <Text style={styles.mainTitle}>오늘의 습관</Text>
+    <View style={{ flex: 1, backgroundColor: '#F2F4F6' }}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* 상단 프로필 & 알림 */}
+        <View style={styles.topBar}>
+          <View>
+            <Text style={styles.userTitle}>김OO님의</Text>
+            <Text style={styles.mainTitle}>오늘의 습관</Text>
+          </View>
+          <TouchableOpacity style={styles.notiBtn}>
+            <Ionicons name="notifications-outline" size={24} color="#1A1F27" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.notiBtn}>
-          <Ionicons name="notifications-outline" size={24} color="#1A1F27" />
+
+        {/* 리스크 보드 카드 (현재 진행 상황) */}
+        <View style={styles.riskCard}>
+          <View style={styles.riskHeader}>
+            <Text style={styles.riskLabel}>현재 걸려있는 포인트</Text>
+            <View style={styles.tag}><Text style={styles.tagText}>진행중</Text></View>
+          </View>
+          <Text style={styles.riskAmount}>5,000 포인트</Text>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: '65%' }]} />
+          </View>
+          <Text style={styles.progressInfo}>오늘 10개 중 6개 달성</Text>
+        </View>
+
+        {/* 챌린지 섹션 */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>그룹 챌린지 🔥</Text>
+          <TouchableOpacity><Text style={styles.moreText}>전체보기</Text></TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.challengeItem}>
+          <View style={styles.itemEmoji}><Text style={{fontSize: 24}}>🏃‍♂️</Text></View>
+          <View style={{flex: 1}}>
+            <Text style={styles.itemTitle}>아침 7시 기상 인증</Text>
+            <Text style={styles.itemSub}>총 2,500 포인트 대기 중</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#D1D6DB" />
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
-      {/* 리스크 보드 카드 (현재 진행 상황) */}
-      <View style={styles.riskCard}>
-        <View style={styles.riskHeader}>
-          <Text style={styles.riskLabel}>현재 걸려있는 포인트</Text>
-          <View style={styles.tag}><Text style={styles.tagText}>진행중</Text></View>
-        </View>
-        <Text style={styles.riskAmount}>5,000 포인트</Text>
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: '65%' }]} />
-        </View>
-        <Text style={styles.progressInfo}>오늘 10개 중 6개 달성</Text>
-      </View>
-
-      {/* 챌린지 섹션 */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>그룹 챌린지 🔥</Text>
-        <TouchableOpacity><Text style={styles.moreText}>전체보기</Text></TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={styles.challengeItem}>
-        <View style={styles.itemEmoji}><Text style={{fontSize: 24}}>🏃‍♂️</Text></View>
-        <View style={{flex: 1}}>
-          <Text style={styles.itemTitle}>아침 7시 기상 인증</Text>
-          <Text style={styles.itemSub}>총 2,500 포인트 대기 중</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color="#D1D6DB" />
+      {/* 우측 하단 플로팅 버튼(목표 생성 바로가기) */}
+      <TouchableOpacity 
+        style={styles.fab} 
+        onPress={() => router.push('/create-goal')}
+      >
+        <Ionicons name="add" size={32} color="#FFF" />
       </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -172,5 +185,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8B95A1',
     marginTop: 4
+  },
+  // FAB 스타일
+  fab: {
+    position: 'absolute',
+    bottom: 135, // 탭바 위로 배치
+    right: 15,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#3182F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 5
   }
 });
