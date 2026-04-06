@@ -1,6 +1,6 @@
 import auth from '@react-native-firebase/auth';
 
-const BASE_URL = 'https://asia-northeast3-YOUR_PROJECT_ID.cloudfunctions.net'; // 임시
+const BASE_URL = 'https://asia-northeast3-do-or-pay-ac3a9.cloudfunctions.net';
 
 export const authApi = {
   // 프로필 정보 업데이트
