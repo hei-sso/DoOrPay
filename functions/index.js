@@ -26,6 +26,9 @@ exports.checkHealth = functions.https.onRequest((req, res) => {
 exports.onUserCreated = onUserCreated;
 exports.updateUserProfile = updateUserProfile;
 exports.createGoal = createGoal;
+<<<<<<< HEAD
 exports.createChargeOrder = createChargeOrder;
 exports.confirmChargePayment = confirmChargePayment;
 exports.getWallet = getWallet;
+=======
+>>>>>>> 0fd2752844fca26ac94287355fbdcb150f2aa657

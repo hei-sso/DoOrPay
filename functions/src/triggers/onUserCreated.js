@@ -1,6 +1,12 @@
 const functions = require("firebase-functions/v1");
-const { getFirestore, Timestamp } = require("firebase-admin/firestore");
+const admin = require("firebase-admin");
 
+// 초기화 안전장치
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+const { getFirestore, Timestamp } = require("firebase-admin/firestore");
 const db = getFirestore();
 
 exports.onUserCreated = functions
@@ -22,9 +28,9 @@ exports.onUserCreated = functions
           nickname: "",
           phone: "",
           birth: "",
-          authProvider: providerData?.[0]?.providerId || "unknown",
+          authProvider: (providerData && providerData.length > 0 && providerData[0].providerId) || "unknown",
           wallet: {
-            balance: 100,
+            balance: 0,
             locked: 0,
           },
           createdAt: now,
