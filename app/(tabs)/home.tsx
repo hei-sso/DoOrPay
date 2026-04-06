@@ -1,9 +1,34 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
 export default function HomeScreen() {
   const router = useRouter();
+  // any 혹은 인터페이스를 사용하여 타입 오류 해결
+  const [userData, setUserData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const user = auth().currentUser;
+    if (!user) return;
+
+    const unsubscribe = firestore()
+      .collection('users')
+      .doc(user.uid)
+      .onSnapshot(doc => {
+        if (doc?.exists()) {
+          setUserData(doc.data());
+        }
+        setLoading(false);
+      }, () => setLoading(false));
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F2F4F6' }}>
@@ -11,7 +36,7 @@ export default function HomeScreen() {
         {/* 상단 프로필 & 알림 */}
         <View style={styles.topBar}>
           <View>
-            <Text style={styles.userTitle}>김OO님의</Text>
+            <Text style={styles.userTitle}>{userData?.nickname || '사용자'}님의</Text>
             <Text style={styles.mainTitle}>오늘의 습관</Text>
           </View>
           <TouchableOpacity style={styles.notiBtn}>
@@ -23,13 +48,16 @@ export default function HomeScreen() {
         <View style={styles.riskCard}>
           <View style={styles.riskHeader}>
             <Text style={styles.riskLabel}>현재 걸려있는 포인트</Text>
-            <View style={styles.tag}><Text style={styles.tagText}>진행중</Text></View>
+            <View style={styles.tag}><Text style={styles.tagText}>완료</Text></View>
           </View>
-          <Text style={styles.riskAmount}>5,000 포인트</Text>
+          {/* wallet 필드 접근 시 오류 방지 */}
+          <Text style={styles.riskAmount}>
+            {userData?.wallet?.locked?.toLocaleString() || 0} 포인트
+          </Text>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: '65%' }]} />
+            <View style={[styles.progressFill, { width: '100%' }]} />
           </View>
-          <Text style={styles.progressInfo}>오늘 10개 중 6개 달성</Text>
+          <Text style={styles.progressInfo}>오늘 10개 중 10개 달성</Text>
         </View>
 
         {/* 챌린지 섹션 */}

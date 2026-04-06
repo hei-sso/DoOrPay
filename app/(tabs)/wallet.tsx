@@ -1,11 +1,51 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+
+// Wallet 구조 정의
+interface WalletData {
+  balance: number;
+  locked: number;
+}
 
 export default function WalletScreen() {
+  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const user = auth().currentUser;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = firestore()
+      .collection('users')
+      .doc(user.uid)
+      .onSnapshot(doc => {
+        if (doc.exists()) {
+          // users 문서 내의 wallet 객체만 추출
+          setWallet(doc.data()?.wallet as WalletData);
+        }
+        setLoading(false);
+      }, (error) => {
+        console.error(error);
+        setLoading(false);
+      });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} color="#3182F6" />;
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.walletHeader}>
         <Text style={styles.walletLabel}>포인트 보유 현황</Text>
-        <Text style={styles.balance}>6,400 포인트</Text>
+        <Text style={styles.balance}>
+          {wallet?.balance?.toLocaleString() || 0} 포인트
+        </Text>
         <View style={styles.btnRow}>
           <TouchableOpacity style={styles.primaryBtn}>
             <Text style={styles.primaryBtnText}>충전하기</Text>
@@ -17,7 +57,7 @@ export default function WalletScreen() {
       </View>
 
       <View style={styles.historySection}>
-        <Text style={styles.historyTitle}>최근 내역</Text>
+        <Text style={styles.historyTitle}>최근 내역 (Mock)</Text>
         {[1, 2, 3].map((i) => (
           <View key={i} style={styles.historyItem}>
             <View>
