@@ -5,7 +5,7 @@ generate_test_data.py
 
 import json
 import os
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageEnhance
 import imagehash
 
 
@@ -29,174 +29,205 @@ def save(img: Image.Image, name: str) -> str:
     return path
 
 
-def make_duplicate_variants(img: Image.Image, prefix: str) -> list:
-    """원본 1장으로 치팅 시나리오 5가지 변형 생성"""
-    variants = []
-
-    # 1. 동일 재업로드
-    variants.append(("exact_copy", img.copy()))
-
-    # 2. 밝기 살짝 조정 (필터 효과)
-    variants.append(("brightness", ImageEnhance.Brightness(img).enhance(1.15)))
-
-    # 3. 살짝 크롭 (테두리 5% 제거)
-    w, h = img.size
-    variants.append(("crop", img.crop((int(w*0.05), int(h*0.05), int(w*0.95), int(h*0.95)))))
-
-    # 4. 대비 조정 (보정 앱 효과)
-    variants.append(("contrast", ImageEnhance.Contrast(img).enhance(1.2)))
-
-    # 5. 리사이즈 후 원본 크기로 복원 (스크린샷 재촬영 시뮬레이션)
-    small = img.resize((int(w*0.5), int(h*0.5)), Image.LANCZOS)
-    variants.append(("screenshot", small.resize((w, h), Image.LANCZOS)))
-
-    saved = []
-    for tag, v in variants:
-        path = save(v, f"{prefix}_{tag}.jpg")
-        saved.append((tag, path))
-    return saved
-
-
-def make_different_pairs(imgs: list) -> list:
-    """서로 다른 카테고리 이미지 조합으로 비중복 쌍 생성"""
-    pairs = []
-    base_a, base_b = imgs[0], imgs[1]
-    w_a, h_a = base_a.size
-    w_b, h_b = base_b.size
-
-    transforms_a = [
-        base_a.crop((0, 0, w_a//2, h_a)),
-        base_a.crop((w_a//2, 0, w_a, h_a)),
-        base_a.crop((0, 0, w_a, h_a//2)),
-        base_a.rotate(5),
-        ImageEnhance.Color(base_a).enhance(0.5),
-    ]
-    transforms_b = [
-        base_b.crop((0, 0, w_b//2, h_b)),
-        base_b.crop((w_b//2, 0, w_b, h_b)),
-        base_b.crop((0, 0, w_b, h_b//2)),
-        base_b.rotate(-5),
-        ImageEnhance.Color(base_b).enhance(0.5),
-    ]
-
-    tags = ["half_left", "half_right", "top_half", "rotated", "grayscale"]
-
-    for i, (ta, tb) in enumerate(zip(transforms_a, transforms_b)):
-        path_a = save(ta, f"workout_diff_{tags[i]}.jpg")
-        path_b = save(tb, f"food_diff_{tags[i]}.jpg")
-        pairs.append((path_a, path_b))
-
-    # 추가: 운동 변형 vs 식단 변형 크로스 조합
-    for i in range(5):
-        ta = transforms_a[i % len(transforms_a)]
-        tb = transforms_b[(i + 2) % len(transforms_b)]
-        path_a = save(ta, f"workout_cross_{i}.jpg")
-        path_b = save(tb, f"food_cross_{i}.jpg")
-        pairs.append((path_a, path_b))
-
-    # 추가: 운동 원본 변형끼리 조합 (다른 날 같은 장소 시뮬레이션)
-    for i in range(5):
-        ta = transforms_a[i % len(transforms_a)]
-        tb = transforms_a[(i + 3) % len(transforms_a)]
-        path_a = save(ta, f"workout_sameplace_a_{i}.jpg")
-        path_b = save(tb, f"workout_sameplace_b_{i}.jpg")
-        pairs.append((path_a, path_b))
-
-    # 추가: 식단 원본 변형끼리 조합
-    for i in range(5):
-        ta = transforms_b[i % len(transforms_b)]
-        tb = transforms_b[(i + 2) % len(transforms_b)]
-        path_a = save(ta, f"food_sameplace_a_{i}.jpg")
-        path_b = save(tb, f"food_sameplace_b_{i}.jpg")
-        pairs.append((path_a, path_b))
-
-    # 추가: 운동 원본 vs 식단 원본
-    path_a = save(base_a, "workout_original.jpg")
-    path_b = save(base_b, "food_original.jpg")
-    pairs.append((path_a, path_b))
-
-    return pairs[:25]
-
-
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    pairs = []
+
+    workout = Image.open(SEED_IMAGES["workout"]).convert("RGB")
+    food    = Image.open(SEED_IMAGES["food"]).convert("RGB")
+    ww, wh = workout.size
+    fw, fh = food.size
+
+    dup_pairs  = []
+    diff_pairs = []
 
     # ── 중복 25쌍 ─────────────────────────────────────
     print("중복 쌍 생성 중...")
-    for label, seed_path in SEED_IMAGES.items():
-        img = Image.open(seed_path).convert("RGB")
-        original_path = save(img, f"{label}_original_seed.jpg")
-        original_hash = compute_phash(img)
 
-        variants = make_duplicate_variants(img, label)
-        for tag, var_path in variants:
-            var_img = Image.open(var_path)
-            var_hash = compute_phash(var_img)
-            dist = imagehash.hex_to_hash(original_hash) - imagehash.hex_to_hash(var_hash)
-            pairs.append({
-                "pair_id": f"dup_{label}_{tag}",
-                "image_a": original_path,
-                "image_b": var_path,
-                "hash_a": original_hash,
-                "hash_b": var_hash,
-                "distance": int(dist),
-                "label": "duplicate",
-                "scenario": tag,
-            })
-            print(f"  [중복] {label}_{tag} → distance: {dist}")
+    # workout 기반 변형 12가지
+    workout_variants = [
+        ("exact_copy",      workout.copy()),
+        ("brightness_up",   ImageEnhance.Brightness(workout).enhance(1.15)),
+        ("brightness_down", ImageEnhance.Brightness(workout).enhance(0.85)),
+        ("crop_5pct",       workout.crop((int(ww*.05), int(wh*.05), int(ww*.95), int(wh*.95)))),
+        ("crop_10pct",      workout.crop((int(ww*.10), int(wh*.10), int(ww*.90), int(wh*.90)))),
+        ("contrast_up",     ImageEnhance.Contrast(workout).enhance(1.2)),
+        ("contrast_down",   ImageEnhance.Contrast(workout).enhance(0.8)),
+        ("screenshot",      workout.resize((int(ww*.5), int(wh*.5)), Image.LANCZOS).resize((ww, wh), Image.LANCZOS)),
+        ("saturation_up",   ImageEnhance.Color(workout).enhance(1.3)),
+        ("saturation_down", ImageEnhance.Color(workout).enhance(0.7)),
+        ("sharpness_up",    ImageEnhance.Sharpness(workout).enhance(2.0)),
+        ("sharpness_down",  ImageEnhance.Sharpness(workout).enhance(0.3)),
+    ]
 
-    # 운동+식단 교차 중복 (동일 사진 재업로드 시뮬레이션 추가)
-    for label, seed_path in SEED_IMAGES.items():
-        img = Image.open(seed_path).convert("RGB")
-        h = compute_phash(img)
-        path = save(img, f"{label}_reupload.jpg")
-        pairs.append({
-            "pair_id": f"dup_{label}_reupload_2",
-            "image_a": path,
-            "image_b": path,
-            "hash_a": h,
-            "hash_b": h,
-            "distance": 0,
+    # food 기반 변형 13가지
+    food_variants = [
+        ("exact_copy",      food.copy()),
+        ("brightness_up",   ImageEnhance.Brightness(food).enhance(1.15)),
+        ("brightness_down", ImageEnhance.Brightness(food).enhance(0.85)),
+        ("crop_5pct",       food.crop((int(fw*.05), int(fh*.05), int(fw*.95), int(fh*.95)))),
+        ("crop_10pct",      food.crop((int(fw*.10), int(fh*.10), int(fw*.90), int(fh*.90)))),
+        ("contrast_up",     ImageEnhance.Contrast(food).enhance(1.2)),
+        ("contrast_down",   ImageEnhance.Contrast(food).enhance(0.8)),
+        ("screenshot",      food.resize((int(fw*.5), int(fh*.5)), Image.LANCZOS).resize((fw, fh), Image.LANCZOS)),
+        ("saturation_up",   ImageEnhance.Color(food).enhance(1.3)),
+        ("saturation_down", ImageEnhance.Color(food).enhance(0.7)),
+        ("sharpness_up",    ImageEnhance.Sharpness(food).enhance(2.0)),
+        ("sharpness_down",  ImageEnhance.Sharpness(food).enhance(0.3)),
+        ("crop_3pct",       food.crop((int(fw*.03), int(fh*.03), int(fw*.97), int(fh*.97)))),
+    ]
+
+    # workout 원본 저장
+    workout_orig_path = save(workout, "workout_original.jpg")
+    workout_orig_hash = compute_phash(workout)
+
+    for tag, variant in workout_variants:
+        var_path = save(variant, f"workout_{tag}.jpg")
+        var_hash = compute_phash(variant)
+        dist = int(imagehash.hex_to_hash(workout_orig_hash) - imagehash.hex_to_hash(var_hash))
+        dup_pairs.append({
+            "pair_id": f"dup_workout_{tag}",
+            "image_a": workout_orig_path,
+            "image_b": var_path,
+            "hash_a": workout_orig_hash,
+            "hash_b": var_hash,
+            "distance": dist,
             "label": "duplicate",
-            "scenario": "exact_reupload",
+            "scenario": tag,
         })
+        print(f"  [중복] workout_{tag} → distance: {dist}")
 
-    dup_pairs = [p for p in pairs if p["label"] == "duplicate"][:25]
+    # food 원본 저장
+    food_orig_path = save(food, "food_original.jpg")
+    food_orig_hash = compute_phash(food)
+
+    for tag, variant in food_variants:
+        var_path = save(variant, f"food_{tag}.jpg")
+        var_hash = compute_phash(variant)
+        dist = int(imagehash.hex_to_hash(food_orig_hash) - imagehash.hex_to_hash(var_hash))
+        dup_pairs.append({
+            "pair_id": f"dup_food_{tag}",
+            "image_a": food_orig_path,
+            "image_b": var_path,
+            "hash_a": food_orig_hash,
+            "hash_b": var_hash,
+            "distance": dist,
+            "label": "duplicate",
+            "scenario": tag,
+        })
+        print(f"  [중복] food_{tag} → distance: {dist}")
+
+    dup_pairs = dup_pairs[:25]
 
     # ── 비중복 25쌍 ───────────────────────────────────
     print("\n비중복 쌍 생성 중...")
-    imgs = [Image.open(p).convert("RGB") for p in SEED_IMAGES.values()]
-    diff_path_pairs = make_different_pairs(imgs)
 
-    diff_pairs = []
-    for i, (pa, pb) in enumerate(diff_path_pairs):
-        img_a = Image.open(pa)
-        img_b = Image.open(pb)
-        ha = compute_phash(img_a)
-        hb = compute_phash(img_b)
-        dist = imagehash.hex_to_hash(ha) - imagehash.hex_to_hash(hb)
+    workout_transforms = [
+        workout.crop((0,       0,       ww//2, wh)),
+        workout.crop((ww//2,   0,       ww,    wh)),
+        workout.crop((0,       0,       ww,    wh//2)),
+        workout.crop((0,       wh//2,   ww,    wh)),
+        workout.rotate(5,  expand=True),
+        workout.rotate(-5, expand=True),
+        workout.rotate(10, expand=True),
+        ImageEnhance.Color(workout).enhance(0.0),
+        workout.crop((int(ww*.2), int(wh*.2), int(ww*.8), int(wh*.8))),
+        workout.crop((int(ww*.1), 0,          int(ww*.9), wh//2)),
+        workout.transpose(Image.FLIP_LEFT_RIGHT),
+        workout.resize((ww//3, wh//3), Image.LANCZOS).resize((ww, wh), Image.LANCZOS),
+        ImageEnhance.Brightness(workout).enhance(0.3),
+    ]
+
+    food_transforms = [
+        food.crop((0,       0,       fw//2, fh)),
+        food.crop((fw//2,   0,       fw,    fh)),
+        food.crop((0,       0,       fw,    fh//2)),
+        food.crop((0,       fh//2,   fw,    fh)),
+        food.rotate(5,  expand=True),
+        food.rotate(-5, expand=True),
+        food.rotate(10, expand=True),
+        ImageEnhance.Color(food).enhance(0.0),
+        food.crop((int(fw*.2), int(fh*.2), int(fw*.8), int(fh*.8))),
+        food.crop((int(fw*.1), 0,          int(fw*.9), fh//2)),
+        food.transpose(Image.FLIP_LEFT_RIGHT),
+        food.resize((fw//3, fh//3), Image.LANCZOS).resize((fw, fh), Image.LANCZOS),
+        ImageEnhance.Brightness(food).enhance(0.3),
+    ]
+
+    # 운동 vs 식단 변형 (13쌍)
+    for i in range(13):
+        ta = workout_transforms[i]
+        tb = food_transforms[i]
+        pa = save(ta, f"diff_workout_{i:02d}.jpg")
+        pb = save(tb, f"diff_food_{i:02d}.jpg")
+        ha = compute_phash(ta)
+        hb = compute_phash(tb)
+        dist = int(imagehash.hex_to_hash(ha) - imagehash.hex_to_hash(hb))
         diff_pairs.append({
             "pair_id": f"diff_{i:03d}",
             "image_a": pa,
             "image_b": pb,
             "hash_a": ha,
             "hash_b": hb,
-            "distance": int(dist),
+            "distance": dist,
             "label": "unique",
-            "scenario": "different_images",
+            "scenario": "workout_vs_food",
         })
         print(f"  [비중복] pair_{i:03d} → distance: {dist}")
 
+    # 운동 변형끼리 (같은 장소 다른 날, 6쌍)
+    for i in range(6):
+        ta = workout_transforms[i]
+        tb = workout_transforms[i + 6]
+        pa = save(ta, f"diff_workout_same_a_{i}.jpg")
+        pb = save(tb, f"diff_workout_same_b_{i}.jpg")
+        ha = compute_phash(ta)
+        hb = compute_phash(tb)
+        dist = int(imagehash.hex_to_hash(ha) - imagehash.hex_to_hash(hb))
+        diff_pairs.append({
+            "pair_id": f"diff_same_gym_{i:03d}",
+            "image_a": pa,
+            "image_b": pb,
+            "hash_a": ha,
+            "hash_b": hb,
+            "distance": dist,
+            "label": "unique",
+            "scenario": "same_place_different_day",
+        })
+        print(f"  [비중복] same_gym_{i} → distance: {dist}")
+
+    # 식단 변형끼리 (비슷한 메뉴 다른 날, 6쌍)
+    for i in range(6):
+        ta = food_transforms[i]
+        tb = food_transforms[i + 6]
+        pa = save(ta, f"diff_food_same_a_{i}.jpg")
+        pb = save(tb, f"diff_food_same_b_{i}.jpg")
+        ha = compute_phash(ta)
+        hb = compute_phash(tb)
+        dist = int(imagehash.hex_to_hash(ha) - imagehash.hex_to_hash(hb))
+        diff_pairs.append({
+            "pair_id": f"diff_same_food_{i:03d}",
+            "image_a": pa,
+            "image_b": pb,
+            "hash_a": ha,
+            "hash_b": hb,
+            "distance": dist,
+            "label": "unique",
+            "scenario": "same_menu_different_day",
+        })
+        print(f"  [비중복] same_food_{i} → distance: {dist}")
+
+    diff_pairs = diff_pairs[:25]
+
     # ── 결과 저장 ─────────────────────────────────────
-    all_pairs = dup_pairs + diff_pairs[:25]
+    all_pairs = dup_pairs + diff_pairs
 
     with open(RESULT_JSON, "w", encoding="utf-8") as f:
         json.dump(all_pairs, f, ensure_ascii=False, indent=2)
 
     print(f"\n완료!")
     print(f"  중복 쌍: {len(dup_pairs)}개")
-    print(f"  비중복 쌍: {len(diff_pairs[:25])}개")
+    print(f"  비중복 쌍: {len(diff_pairs)}개")
+    print(f"  전체: {len(all_pairs)}개")
     print(f"  결과 저장: {RESULT_JSON}")
 
 
