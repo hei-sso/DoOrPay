@@ -140,7 +140,7 @@ def main():
                 "image_b": var_path,
                 "hash_a": original_hash,
                 "hash_b": var_hash,
-                "distance": dist,
+                "distance": int(dist),
                 "label": "duplicate",
                 "scenario": tag,
             })
@@ -182,7 +182,7 @@ def main():
             "image_b": pb,
             "hash_a": ha,
             "hash_b": hb,
-            "distance": dist,
+            "distance": int(dist),
             "label": "unique",
             "scenario": "different_images",
         })
