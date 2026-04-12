@@ -8,7 +8,7 @@ export default function GoalTabScreen() {
   // Mock 데이터
   const myGoals = [
     { id: 'goal_1', title: '매일 물 2L 마시기', type: 'personal', amount: 5000, emoji: '💧' },
-    { id: 'goal_2', title: '아침 7시 기상 인증', type: 'group', amount: 2500, emoji: '⏰' },
+    { id: 'goal_2', title: '아침 7시 기상 인증', type: 'group', amount: 2500, emoji: '⏰', leaderId: 'leader_uid_123' },
     { id: 'goal_3', title: '하루 1만보 걷기', type: 'personal', amount: 10000, emoji: '👟' },
   ];
 

@@ -2,16 +2,26 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import InviteMemberModal from '../components/InviteMemberModal';
 
 const { width } = Dimensions.get('window');
 
 export default function GoalDetailScreen() {
   const router = useRouter();
-  const { id, title, type, amount, emoji } = useLocalSearchParams();
+  const { id, title, type, amount, emoji, leaderId } = useLocalSearchParams();
+  
+  // UI 테스트를 위해 현재 유저 UID를 leader_uid_123으로 가정
+  // leaderId가 'leader_uid_123'으로 넘어오면 방장 메뉴가 활성화됨
+  const currentUid = 'leader_uid_123';
+  const isLeader = type === 'group' && currentUid === leaderId;
+
+  // 모달 상태 관리
+  const [isInviteVisible, setIsInviteVisible] = useState(false);
+  const [targetUid, setTargetUid] = useState('');
 
   // Mock 데이터
   const [goalDetail] = useState({
-    startDate: '2026.04.10',
+    startDate: '2026.04.01',
     endDate: '2026.05.30',
     totalDays: 30,
     currentStreak: 12,
@@ -24,9 +34,18 @@ export default function GoalDetailScreen() {
     ]
   });
 
+  const handleInviteSubmit = (uid: string) => {
+    if(!uid.trim()) {
+      Alert.alert("알림", "초대할 사용자의 UID를 입력해주세요.");
+      return;
+    }
+    Alert.alert("초대 완료 (Mock)", `${uid}님에게 그룹 초대장을 보냈습니다.`);
+    setIsInviteVisible(false);
+    setTargetUid('');
+  };
+
   const handleUploadImage = () => {
-    Alert.alert("인증하기", "갤러리에서 인증 사진을 선택하시겠습니까?");
-    // 실제 구현 시 expo-image-picker 등을 연결
+    Alert.alert("인증하기", "갤러리에서 오늘 인증 사진을 선택하시겠습니까?");
   };
 
   return (
@@ -54,10 +73,30 @@ export default function GoalDetailScreen() {
             </Text>
           </View>
           <Text style={styles.mainTitle}>{title}</Text>
-          <Text style={styles.description}>{goalDetail.description}</Text>
+          <Text style={styles.descriptionText}>{goalDetail.description}</Text>
         </View>
 
-        {/* 대시보드 (포인트 & 기간) */}
+        {/* 방장 전용 관리 카드 (isLeader가 true일 때만 노출) */}
+        {isLeader && (
+          <>
+            <View style={styles.leaderCard}>
+              <View style={styles.leaderHeader}>
+                <Ionicons name="shield-checkmark" size={18} color="#1B64DA" />
+                <Text style={styles.leaderTitleText}>그룹 관리자 전용</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.inviteBtn} 
+                onPress={() => setIsInviteVisible(true)}
+              >
+                <Ionicons name="person-add" size={18} color="#FFF" />
+                <Text style={styles.inviteBtnText}>새 멤버 초대하기</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.divider} />
+          </>
+        )}
+
+        {/* 대시보드 */}
         <View style={styles.dashboard}>
           <View style={styles.dashItem}>
             <Text style={styles.dashLabel}>예치 포인트</Text>
@@ -74,12 +113,12 @@ export default function GoalDetailScreen() {
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={20} color="#8B95A1" />
-            <Text style={styles.infoLabel}>시작</Text>
+            <Text style={styles.infoLabel}>시작일</Text>
             <Text style={styles.infoValue}>{goalDetail.startDate}</Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="flag-outline" size={20} color="#8B95A1" />
-            <Text style={styles.infoLabel}>종료</Text>
+            <Text style={styles.infoLabel}>종료일</Text>
             <Text style={styles.infoValue}>{goalDetail.endDate}</Text>
           </View>
           <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
@@ -94,21 +133,30 @@ export default function GoalDetailScreen() {
         {/* 인증 히스토리 갤러리 */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>나의 인증 기록</Text>
-          <TouchableOpacity>
-            <Text style={styles.moreText}>전체보기</Text>
-          </TouchableOpacity>
+          <TouchableOpacity><Text style={styles.moreText}>전체보기</Text></TouchableOpacity>
         </View>
         
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gallery}>
           {goalDetail.history.map((item) => (
             <View key={item.id} style={styles.historyItem}>
               <Image source={{ uri: item.img }} style={styles.historyImg} />
-              <Text style={styles.historyDate}>{item.date}</Text>
+              <View style={styles.historyDateBadge}>
+                <Text style={styles.historyDateText}>{item.date}</Text>
+              </View>
             </View>
           ))}
           {/* 사진이 더 많아지면 여기에 추가 */}
         </ScrollView>
       </ScrollView>
+
+      {/* 초대 모달 */}
+      <InviteMemberModal 
+        visible={isInviteVisible}
+        onClose={() => setIsInviteVisible(false)}
+        onSubmit={handleInviteSubmit}
+        uid={targetUid}
+        setUid={setTargetUid}
+      />
 
       {/* 하단 고정 버튼 */}
       <View style={styles.footer}>
@@ -157,12 +205,12 @@ const styles = StyleSheet.create({
     paddingBottom: 32
   },
   emojiCircle: { 
-    width: 100, 
-    height: 100, 
-    borderRadius: 50, 
-    backgroundColor: '#F9FAFB', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
     marginTop: 10
   },
@@ -182,9 +230,49 @@ const styles = StyleSheet.create({
     color: '#1A1F27',
     marginBottom: 8
   },
-  description: {
+  descriptionText: {
     fontSize: 15,
     color: '#8B95A1'
+  },
+
+  // 방장 전용 카드
+  leaderCard: {
+    backgroundColor: '#E8F3FF',
+    margin: 20,
+    padding: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#D0E4FF'
+  },
+  leaderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16
+  },
+  leaderTitleText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1B64DA',
+    marginLeft: 6
+  },
+  inviteBtn: {
+    backgroundColor: '#3182F6',
+    flexDirection: 'row',
+    paddingVertical: 14,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  inviteBtnText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    marginLeft: 8
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#c2c2c2',
+    marginHorizontal: 24,
+    marginBottom: 8,
   },
 
   // 대시보드
@@ -192,13 +280,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     backgroundColor: '#FFF', 
     marginHorizontal: 20, 
-    marginTop: -20, 
+    marginTop: 20, 
     borderRadius: 24, 
     padding: 24,
+    elevation: 2,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 10,
-    elevation: 2
   },
   dashItem: {
     flex: 1,
@@ -228,11 +316,11 @@ const styles = StyleSheet.create({
     padding: 20
   },
   infoRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingVertical: 16, 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#F9FAFB' 
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F9FAFB'
   },
   infoLabel: {
     fontSize: 15,
@@ -246,12 +334,12 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
 
-  // 갤러리 섹션
-  sectionHeader: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 24, 
+  // 갤러리 섹션 스타일
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
     marginTop: 10,
     marginBottom: 16
   },
@@ -273,16 +361,23 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   historyImg: {
-    width: 120,
+    width: 110,
     height: 150,
     borderRadius: 16,
     backgroundColor: '#E5E8EB'
   },
-  historyDate: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#8B95A1',
-    fontWeight: '500'
+  historyDateBadge: {
+    position: 'absolute',
+    bottom: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8
+  },
+  historyDateText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold'
   },
 
   // 하단 버튼
