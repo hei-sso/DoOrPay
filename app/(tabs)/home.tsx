@@ -11,6 +11,11 @@ export default function HomeScreen() {
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Mock 데이터
+  const groupChallenges = [
+    { id: 'goal_2', title: '아침 7시 기상 인증', type: 'group', amount: 2500, emoji: '⏰' },
+  ];
+
   useEffect(() => {
     const user = auth().currentUser;
     if (!user) return;
@@ -28,7 +33,7 @@ export default function HomeScreen() {
     return () => unsubscribe();
   }, []);
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} color="#3182F6" />;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F2F4F6' }}>
@@ -44,13 +49,13 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 리스크 보드 카드 (현재 진행 상황) */}
+        {/* 리스크 보드 카드 */}
         <View style={styles.riskCard}>
           <View style={styles.riskHeader}>
             <Text style={styles.riskLabel}>현재 걸려있는 포인트</Text>
             <View style={styles.tag}><Text style={styles.tagText}>완료</Text></View>
           </View>
-          {/* wallet 필드 접근 시 오류 방지 */}
+          {/* wallet 필드 접근 시 오류 방지 */}          
           <Text style={styles.riskAmount}>
             {userData?.wallet?.locked?.toLocaleString() || 0} 포인트
           </Text>
@@ -66,17 +71,26 @@ export default function HomeScreen() {
           <TouchableOpacity><Text style={styles.moreText}>전체보기</Text></TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.challengeItem}>
-          <View style={styles.itemEmoji}><Text style={{fontSize: 24}}>🏃‍♂️</Text></View>
-          <View style={{flex: 1}}>
-            <Text style={styles.itemTitle}>아침 7시 기상 인증</Text>
-            <Text style={styles.itemSub}>총 2,500 포인트 대기 중</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#D1D6DB" />
-        </TouchableOpacity>
+        {groupChallenges.map((item) => (
+          <TouchableOpacity 
+            key={item.id}
+            style={styles.challengeItem}
+            onPress={() => router.push({
+              pathname: '/goal-detail' as any,
+              params: { ...item }
+            })}
+          >
+            <View style={styles.itemEmoji}><Text style={{fontSize: 24}}>{item.emoji}</Text></View>
+            <View style={{flex: 1}}>
+              <Text style={styles.itemTitle}>{item.title}</Text>
+              <Text style={styles.itemSub}>총 {item.amount.toLocaleString()} 포인트 대기 중</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#D1D6DB" />
+          </TouchableOpacity>
+        ))}
       </ScrollView>
 
-      {/* 우측 하단 플로팅 버튼(목표 생성 바로가기) */}
+      {/* 우측 하단 플로팅 버튼 */}
       <TouchableOpacity 
         style={styles.fab} 
         onPress={() => router.push('/create-goal')}

@@ -5,6 +5,13 @@ import { useRouter } from 'expo-router';
 export default function GoalTabScreen() {
   const router = useRouter();
 
+  // Mock 데이터
+  const myGoals = [
+    { id: 'goal_1', title: '매일 물 2L 마시기', type: 'personal', amount: 5000, emoji: '💧' },
+    { id: 'goal_2', title: '아침 7시 기상 인증', type: 'group', amount: 2500, emoji: '⏰' },
+    { id: 'goal_3', title: '하루 1만보 걷기', type: 'personal', amount: 10000, emoji: '👟' },
+  ];
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -34,11 +41,42 @@ export default function GoalTabScreen() {
           <Ionicons name="chevron-forward" size={24} color="#D1D6DB" />
         </TouchableOpacity>
 
-        <Text style={[styles.sectionTitle, { marginTop: 40 }]}>진행 중인 내 목표</Text>
         {/* 진행 중인 목표 리스트 */}
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>현재 진행 중인 목표가 없습니다.</Text>
-        </View>
+        <Text style={[styles.sectionTitle, { marginTop: 40 }]}>진행 중인 내 목표</Text>
+        
+        {myGoals.map((goal) => (
+          <TouchableOpacity 
+            key={goal.id} 
+            style={styles.goalItemCard}
+            onPress={() => router.push({
+              pathname: '/goal-detail' as any,
+              params: { ...goal }
+            })}
+          >
+            <View style={styles.goalEmojiBox}>
+              <Text style={{ fontSize: 20 }}>{goal.emoji}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.titleRow}>
+                {/* 타입 배지 추가 */}
+                <View style={[
+                  styles.typeBadge, 
+                  { backgroundColor: goal.type === 'group' ? '#FFF0F0' : '#E8F3FF' }
+                ]}>
+                  <Text style={[
+                    styles.typeBadgeText, 
+                    { color: goal.type === 'group' ? '#FF5252' : '#3182F6' }
+                  ]}>
+                    {goal.type === 'group' ? '그룹' : '개인'}
+                  </Text>
+                </View>
+                <Text style={styles.goalTitle} numberOfLines={1}>{goal.title}</Text>
+              </View>
+              <Text style={styles.goalSub}>{goal.amount.toLocaleString()} 포인트 예치 중</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#D1D6DB" />
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     </View>
   );
@@ -51,7 +89,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 30,
-    paddingTop: 35,
+    paddingTop: 60,
     backgroundColor: '#FFF'
   },
   headerTitle: {
@@ -71,7 +109,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     padding: 20,
     borderRadius: 20,
-    marginBottom: 16
+    marginBottom: 12
   },
   cardIconBox: {
     width: 48,
@@ -92,15 +130,48 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8B95A1'
   },
-  emptyState: {
+  
+  // 진행 중인 목표 아이템
+  goalItemCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
     backgroundColor: '#FFF',
-    borderRadius: 20
+    padding: 16,
+    borderRadius: 20,
+    marginBottom: 12
   },
-  emptyText: {
-    color: '#8B95A1',
-    fontSize: 14
+  goalEmojiBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4
+  },
+  typeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 6
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold'
+  },
+  goalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333D4B',
+    flex: 1
+  },
+  goalSub: {
+    fontSize: 13,
+    color: '#8B95A1'
   }
 });

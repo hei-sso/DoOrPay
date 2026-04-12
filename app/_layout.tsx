@@ -8,6 +8,7 @@ export default function RootLayout() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="create-goal" />
       <Stack.Screen name="create-challenge" />
+      <Stack.Screen name="goal-detail" />
       <Stack.Screen name="payment" />
       <Stack.Screen name="settings" />
     </Stack>
