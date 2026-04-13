@@ -11,11 +11,16 @@ const { updateUserProfile } = require("./src/users/updateUserProfile");
 
 // goals
 const { createGoal } = require("./src/goals/createGoal");
+const { updateGoalStatus } = require("./src/goals/updateGoalStatus");
+const { finishGoal } = require("./src/goals/finishGoal");
 
 //wallet
 const { createChargeOrder } = require("./src/wallet/createChargeOrder");
 const { confirmChargePayment } = require("./src/wallet/confirmChargePayment");
 const { getWallet } = require("./src/wallet/getWallet");
+const { walletLock } = require("./src/wallet/walletLock");
+const { walletUnlock } = require("./src/wallet/walletUnlock");
+const { walletDistribute } = require("./src/wallet/walletDistribute");
 
 // health check
 exports.checkHealth = functions.https.onRequest((req, res) => {
@@ -25,10 +30,12 @@ exports.checkHealth = functions.https.onRequest((req, res) => {
 // exports
 exports.onUserCreated = onUserCreated;
 exports.updateUserProfile = updateUserProfile;
+exports.finishGoal = finishGoal;
 exports.createGoal = createGoal;
-<<<<<<< HEAD
 exports.createChargeOrder = createChargeOrder;
 exports.confirmChargePayment = confirmChargePayment;
 exports.getWallet = getWallet;
-=======
->>>>>>> 0fd2752844fca26ac94287355fbdcb150f2aa657
+exports.walletLock = walletLock;
+exports.walletUnlock = walletUnlock;
+exports.updateGoalStatus = updateGoalStatus;
+exports.walletDistribute = walletDistribute;

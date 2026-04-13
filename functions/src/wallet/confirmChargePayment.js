@@ -54,13 +54,17 @@ exports.confirmChargePayment = functions
         const txDocInside = await transaction.get(txRef);
 
         if (!userDoc.exists) {
-          throw new Error("User not found");
+          const error = new Error("User not found");
+          error.statusCode = 404;
+          throw error;
         }
 
         const latestTxData = txDocInside.data();
 
         if (latestTxData.status !== "pending") {
-          throw new Error("Transaction already processed");
+          const error = new Error("Transaction already processed");
+          error.statusCode = 409;
+          throw error;
         }
 
         const userData = userDoc.data();
