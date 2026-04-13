@@ -20,7 +20,7 @@ const { confirmChargePayment } = require("./src/wallet/confirmChargePayment");
 const { getWallet } = require("./src/wallet/getWallet");
 const { walletLock } = require("./src/wallet/walletLock");
 const { walletUnlock } = require("./src/wallet/walletUnlock");
-const { walletDistribute } = require("./src/wallet/walletDistribute");
+// const { walletDistribute } = require("./src/wallet/walletDistribute");
 
 //wallet
 const { createChargeOrder } = require("./src/wallet/createChargeOrder");
@@ -43,4 +43,4 @@ exports.getWallet = getWallet;
 exports.walletLock = walletLock;
 exports.walletUnlock = walletUnlock;
 exports.updateGoalStatus = updateGoalStatus;
-exports.walletDistribute = walletDistribute;
+// exports.walletDistribute = walletDistribute;
