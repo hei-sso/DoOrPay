@@ -20,7 +20,7 @@ const { confirmChargePayment } = require("./src/wallet/confirmChargePayment");
 const { getWallet } = require("./src/wallet/getWallet");
 const { walletLock } = require("./src/wallet/walletLock");
 const { walletUnlock } = require("./src/wallet/walletUnlock");
-const { walletDistribute } = require("./src/wallet/walletDistribute");
+// const { walletDistribute } = require("./src/wallet/walletDistribute");
 
 // health check
 exports.checkHealth = functions.https.onRequest((req, res) => {
@@ -38,4 +38,4 @@ exports.getWallet = getWallet;
 exports.walletLock = walletLock;
 exports.walletUnlock = walletUnlock;
 exports.updateGoalStatus = updateGoalStatus;
-exports.walletDistribute = walletDistribute;
+// exports.walletDistribute = walletDistribute;
