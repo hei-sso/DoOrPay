@@ -32,7 +32,7 @@ export default function SignupScreen() {
       });
 
       Alert.alert("성공", "회원가입 완료!");
-      router.replace('./(tabs)/home');
+      router.replace('/(tabs)/home');
     } catch (error: any) {
       Alert.alert("회원가입 에러", error.message);
     }
@@ -58,7 +58,7 @@ export default function SignupScreen() {
         birth: ''
       });
 
-      router.replace('./(tabs)/home');
+      router.replace('/(tabs)/home');
     } catch (error: any) {
       console.log("구글 회원가입 에러:", error);
     }

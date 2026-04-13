@@ -22,6 +22,11 @@ const { walletLock } = require("./src/wallet/walletLock");
 const { walletUnlock } = require("./src/wallet/walletUnlock");
 // const { walletDistribute } = require("./src/wallet/walletDistribute");
 
+//wallet
+const { createChargeOrder } = require("./src/wallet/createChargeOrder");
+const { confirmChargePayment } = require("./src/wallet/confirmChargePayment");
+const { getWallet } = require("./src/wallet/getWallet");
+
 // health check
 exports.checkHealth = functions.https.onRequest((req, res) => {
   res.status(200).send("OK");
