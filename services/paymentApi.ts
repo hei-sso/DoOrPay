@@ -1,4 +1,4 @@
-const TOSS_CLIENT_KEY = process.env.TOSS_SECRET_KEY;
+const TOSS_CLIENT_KEY = process.env.EXPO_PUBLIC_TOSS_CLIENT_KEY;
 const SUCCESS_URL = 'http://localhost:19006/payment/success';
 const FAIL_URL = 'http://localhost:19006/payment/fail';
 
