@@ -50,6 +50,7 @@ export function subscribeToTransactions(uid: string, onUpdate: (list: any[]) => 
   return firestore()
     .collection('transactions')
     .where('userId', '==', uid)
+    .where('status', '==', 'approved')
     .orderBy('createdAt', 'desc')
     .limit(10)
     .onSnapshot(querySnapshot => {
