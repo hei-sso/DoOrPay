@@ -8,6 +8,8 @@ const db = admin.firestore();
 exports.confirmChargePayment = functions
   .region("asia-northeast3")
   .https.onRequest(async (req, res) => {
+    let txDoc = null;
+
     try {
       const uid = await getUidFromRequest(req);
       const { paymentKey, orderId, amount } = req.body;
@@ -29,7 +31,7 @@ exports.confirmChargePayment = functions
         return res.status(404).json({ error: "Transaction not found" });
       }
 
-      const txDoc = txSnapshot.docs[0];
+      txDoc = txSnapshot.docs[0];
       const txData = txDoc.data();
 
       if (txData.status !== "pending") {
@@ -37,14 +39,38 @@ exports.confirmChargePayment = functions
       }
 
       if (txData.amount !== parsedAmount) {
+        await db.collection("transactions").doc(txDoc.id).update({
+          status: "rejected",
+          rejectedAt: new Date(),
+          rejectReason: "Amount mismatch",
+          paymentKey: paymentKey || null,
+          tossError: null,
+        });
+
         return res.status(400).json({ error: "Amount mismatch" });
       }
 
-      const tossResult = await confirmTossPayment({
-        paymentKey,
-        orderId,
-        amount: parsedAmount,
-      });
+      let tossResult;
+      try {
+        tossResult = await confirmTossPayment({
+          paymentKey,
+          orderId,
+          amount: parsedAmount,
+        });
+      } catch (error) {
+        await db.collection("transactions").doc(txDoc.id).update({
+          status: "rejected",
+          rejectedAt: new Date(),
+          rejectReason: error.message || "Toss confirm failed",
+          paymentKey: paymentKey || null,
+          tossError: error.details || null,
+        });
+
+        return res.status(error.statusCode || 500).json({
+          error: error.message || "Toss confirm failed",
+          details: error.details || null,
+        });
+      }
 
       const userRef = db.collection("users").doc(uid);
       const txRef = db.collection("transactions").doc(txDoc.id);
@@ -55,6 +81,12 @@ exports.confirmChargePayment = functions
 
         if (!userDoc.exists) {
           const error = new Error("User not found");
+          error.statusCode = 404;
+          throw error;
+        }
+
+        if (!txDocInside.exists) {
+          const error = new Error("Transaction not found");
           error.statusCode = 404;
           throw error;
         }
@@ -72,16 +104,19 @@ exports.confirmChargePayment = functions
 
         transaction.update(userRef, {
           wallet: {
-            balance: wallet.balance + parsedAmount,
-            locked: wallet.locked || 0,
+            balance: Number(wallet.balance || 0) + parsedAmount,
+            locked: Number(wallet.locked || 0),
           },
           updatedAt: new Date(),
         });
 
         transaction.update(txRef, {
-          status: "paid",
+          type: "deposit",
+          status: "approved",
           paymentKey,
           approvedAt: new Date(),
+          rejectedAt: null,
+          rejectReason: null,
           toss: {
             method: tossResult.method || null,
             orderName: tossResult.orderName || null,
@@ -97,6 +132,19 @@ exports.confirmChargePayment = functions
       });
     } catch (error) {
       console.error("confirmChargePayment error:", error);
+
+      if (txDoc) {
+        try {
+          await db.collection("transactions").doc(txDoc.id).update({
+            status: "rejected",
+            rejectedAt: new Date(),
+            rejectReason: error.message || "Internal Server Error",
+          });
+        } catch (updateError) {
+          console.error("failed to update transaction status:", updateError);
+        }
+      }
+
       return res.status(error.statusCode || 500).json({
         error: error.message || "Internal Server Error",
         details: error.details || null,
