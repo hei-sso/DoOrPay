@@ -14,13 +14,19 @@ const { createGoal } = require("./src/goals/createGoal");
 const { updateGoalStatus } = require("./src/goals/updateGoalStatus");
 const { finishGoal } = require("./src/goals/finishGoal");
 
+// challenges
+const { createChallenge } = require("./src/challenges/createChallenge");
+const { respondChallengeInvite } = require("./src/challenges/respondChallengeInvite");
+const { invateChallengeMember } = require("./src/challenges/invateChallengeMember");
+const { getMyInvitations } = require("./src/challenges/getMyInvitations");
+
 //wallet
 const { createChargeOrder } = require("./src/wallet/createChargeOrder");
 const { confirmChargePayment } = require("./src/wallet/confirmChargePayment");
 const { getWallet } = require("./src/wallet/getWallet");
 const { walletLock } = require("./src/wallet/walletLock");
 const { walletUnlock } = require("./src/wallet/walletUnlock");
-const { walletDistribute } = require("./src/wallet/walletDistribute");
+// const { walletDistribute } = require("./src/wallet/walletDistribute");
 
 // health check
 exports.checkHealth = functions.https.onRequest((req, res) => {
@@ -38,4 +44,9 @@ exports.getWallet = getWallet;
 exports.walletLock = walletLock;
 exports.walletUnlock = walletUnlock;
 exports.updateGoalStatus = updateGoalStatus;
-exports.walletDistribute = walletDistribute;
+exports.createChallenge = createChallenge;
+exports.respondChallengeInvite = respondChallengeInvite;
+exports.inviteChallengeMember = invateChallengeMember;
+exports.getMyInvitations = getMyInvitations;
+
+// exports.walletDistribute = walletDistribute;
