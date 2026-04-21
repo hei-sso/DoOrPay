@@ -41,8 +41,8 @@ Thumbs.db
 /android
 
 # Firebase
-google-services.json
-GoogleService-Info.plist
+# google-services.json
+# GoogleService-Info.plist
 
 # Editor
 _vscode/

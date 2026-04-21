@@ -1,175 +1,19 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // 로그인 여부
-    function isAuth() {
-      return request.auth != null;
-    }
 
-    // 본인 여부
-    function isSelf(uid) {
-      return isAuth() && request.auth.uid == uid;
-    }
-
-    // 변경 불가 필드 체크 (업데이트 시 특정 필드 보호)
-    function notChanging(fields) {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
-    }
-
-    // 서버 타임스탬프 강제
-    function validTimestamp(field) {
-      return request.resource.data[field] == request.time;
-    }
-
-    // challenges 멤버 여부 (서브컬렉션 기반)
-    function isChallengeMemeber(challengeId) {
-      return isAuth() && exists(
-        /databases/$(database)/documents/challenges/$(challengeId)/members/$(request.auth.uid)
-      );
-    }
-
-    match /users/{uid} {
-
-      // 본인 전체 읽기 / 타인은 nickname, profileImage만 읽기
-      // → 클라이언트에서 필드 필터링 필요 (Firestore는 필드 단위 rule 미지원)
-      //   실무에서는 publicProfiles 별도 컬렉션으로 분리 권장
-      allow read: if isAuth();
-
-      // 회원가입 시 최초 생성
-      // wallet은 반드시 balance:0, locked:0으로 초기화
-      allow create: if isSelf(uid)
-        && request.resource.data.wallet.balance == 0
-        && request.resource.data.wallet.locked == 0
-        && validTimestamp('createdAt');
-
-      // 프로필 수정: nickname, profileImage만 허용
-      // wallet, email, createdAt은 직접 수정 불가
-      allow update: if isSelf(uid)
-        && notChanging(['wallet', 'email', 'createdAt']);
-
-      allow delete: if false;
-    }
-
-    match /goals/{goalId} {
-
-      // 본인 goal만 읽기
-      // 타인 goal 조회가 필요하면 (예: 챌린지 피드) status == 'active' 조건 추가 검토
-      allow read: if isAuth()
-        && resource.data.userId == request.auth.uid;
-
-      // 생성: userId는 반드시 본인 uid, status는 'active'로 시작
-      allow create: if isAuth()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.status == 'active'
-        && request.resource.data.stakeAmount > 0
-        && request.resource.data.endDate > request.resource.data.startDate
-        && validTimestamp('createdAt');
-
-      // 수정: 본인만, 단 핵심 필드는 변경 불가
-      // status 변경은 Cloud Functions에서 처리 (성공/실패 판정)
-      allow update: if isAuth()
-        && resource.data.userId == request.auth.uid
-        && notChanging(['userId', 'stakeAmount', 'status', 'createdAt']);
-
-      allow delete: if false;
-    }
-
-    match /challenges/{challengeId} {
-
-      // 멤버라면 읽기 가능, 공개 챌린지는 비멤버도 목록 조회 허용
-      allow read: if isAuth();
-
-      // 생성: 로그인 유저, creatorId는 본인, status는 'active'
-      allow create: if isAuth()
-        && request.resource.data.creatorId == request.auth.uid
-        && request.resource.data.status == 'active'
-        && request.resource.data.totalStake == 0
-        && request.resource.data.endDate > request.resource.data.startDate
-        && validTimestamp('createdAt');
-
-      // 수정: 생성자만, 핵심 필드 보호
-      // totalStake, status는 Cloud Functions에서만 변경
-      allow update: if isAuth()
-        && resource.data.creatorId == request.auth.uid
-        && notChanging(['creatorId', 'totalStake', 'status', 'createdAt']);
-
-      allow delete: if false;
-
-      // ── challenges/{id}/members ────────────────
-
-      match /members/{uid} {
-
-        // 챌린지 참여자라면 다른 멤버 목록 조회 가능
-        allow read: if isChallengeMemeber(challengeId) || isAuth();
-
-        // 본인 참여 문서만 생성 가능
-        // stakeAmount, status 초기값 강제
-        allow create: if isSelf(uid)
-          && request.resource.data.uid == uid
-          && request.resource.data.status == 'active'
-          && request.resource.data.stakeAmount > 0
-          && validTimestamp('joinedAt');
-
-        // 멤버 상태 변경은 Cloud Functions 전용
-        allow update: if false;
-
-        // 본인 탈퇴만 허용 (status가 'active'일 때만)
-        allow delete: if isSelf(uid)
-          && resource.data.status == 'active';
-      }
-    }
-
-    match /verifications/{verificationId} {
-
-      // 본인 인증 내역 읽기
-      // targetId 기준으로 같은 목표/챌린지 참여자도 읽을 수 있게 하려면
-      // Cloud Functions로 목록 제공 권장 (보안 단순화)
-      allow read: if isAuth()
-        && resource.data.userId == request.auth.uid;
-
-      // 인증 제출:
-      // - userId는 반드시 본인
-      // - status는 반드시 'pending'으로 시작 (AI/검토 전)
-      // - targetType은 'goal' 또는 'challenge'만 허용
-      allow create: if isAuth()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.status == 'pending'
-        && request.resource.data.targetType in ['goal', 'challenge']
-        && request.resource.data.imageUrl is string
-        && request.resource.data.imageUrl.size() > 0
-        && validTimestamp('createdAt');
-
-      // 수정 전면 금지: status 변경은 Cloud Functions 전용
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    match /images/{imageId} {
-
-      // 로그인 유저라면 이미지 메타 조회 가능 (중복 pHash 체크용)
-      allow read: if isAuth();
-
-      // 이미지 업로드 후 메타 등록: 본인 업로드 문서만 생성
-      // pHash는 Cloud Functions에서 계산해 덮어쓰는 구조라면
-      // create는 허용하되 pHash 필드는 Cloud Functions에서 update
-      allow create: if isAuth()
-        && request.resource.data.imageUrl is string
-        && validTimestamp('createdAt');
-
-      // pHash 등록은 Cloud Functions만 (클라이언트 위변조 방지)
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    match /transactions/{txnId} {
-
-      // 본인 거래 내역만 조회
-      allow read: if isAuth()
-        && resource.data.userId == request.auth.uid;
-
-      // 모든 쓰기는 Cloud Functions (Admin SDK) 전용
-      allow write: if false;
+    // This rule allows anyone with your Firestore database reference to view, edit,
+    // and delete all data in your Firestore database. It is useful for getting
+    // started, but it is configured to expire after 30 days because it
+    // leaves your app open to attackers. At that time, all client
+    // requests to your Firestore database will be denied.
+    //
+    // Make sure to write security rules for your app before that time, or else
+    // all client requests to your Firestore database will be denied until you Update
+    // your rules
+    match /{document=**} {
+      allow read, write: if request.time < timestamp.date(2026, 4, 16);
     }
   }
 }

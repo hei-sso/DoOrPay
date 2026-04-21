@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "DoOrPay",
-    "slug": "DoOrPay",
+    "slug": "doorpay",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -25,7 +25,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "packege": "com.flint.doorpay",
+      "package": "com.flint.doorpay",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -36,6 +36,7 @@
     "plugins": [
       "expo-router",
       "@react-native-firebase/app",
+      "@react-native-google-signin/google-signin",
       [
         "expo-build-properties",
         {
@@ -47,6 +48,19 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0d9b5fbc-3e99-41d0-9d90-d05ac69d8d5b"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0d9b5fbc-3e99-41d0-9d90-d05ac69d8d5b"
+    },
+    "owner": "hei_sso"
   }
 }

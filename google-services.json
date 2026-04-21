@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "856128983927",
+    "project_id": "do-or-pay-ac3a9",
+    "storage_bucket": "do-or-pay-ac3a9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:856128983927:android:5d852ac0b24355e3ba8772",
+        "android_client_info": {
+          "package_name": "com.flint.doorpay"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlVXWEHxrrbksi-fOk1q84mVr2ceBKrms"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
