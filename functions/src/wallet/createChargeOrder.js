@@ -24,14 +24,17 @@ exports.createChargeOrder = functions
         txId: txRef.id,
         userId: uid,
         amount: parsedAmount,
-        type: "deposit",
+        type: "deposit_request",
         status: "pending",
         provider: "toss",
         orderId,
         paymentKey: null,
-        description: "포인트 충전",
+        description: "포인트 충전 요청",
         createdAt: new Date(),
         approvedAt: null,
+        rejectedAt: null,
+        rejectReason: null,
+        tossError: null,
       });
 
       return res.status(200).json({
