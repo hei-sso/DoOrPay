@@ -2,12 +2,22 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import InviteMemberModal from '../components/InviteMemberModal';
 
 const { width } = Dimensions.get('window');
 
-export default function GoalDetailScreen() {
+export default function ChallengeDetailScreen() {
   const router = useRouter();
-  const { id, title, type, amount, emoji } = useLocalSearchParams();
+  const { id, title, amount, emoji, leaderId } = useLocalSearchParams();
+
+  // UI 테스트를 위해 현재 유저 UID를 leader_uid_123으로 가정
+  // leaderId가 'leader_uid_123'으로 넘어오면 방장 메뉴가 활성화됨
+  const currentUid = 'leader_uid_123';
+  const isLeader = currentUid === leaderId;
+
+  // 모달 상태 관리
+  const [isInviteVisible, setIsInviteVisible] = useState(false);
+  const [targetUid, setTargetUid] = useState('');
 
   // Mock 데이터
   const [goalDetail] = useState({
@@ -23,6 +33,16 @@ export default function GoalDetailScreen() {
       { id: 'h3', date: '04.09', img: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200' },
     ]
   });
+
+  const handleInviteSubmit = (uid: string) => {
+    if(!uid.trim()) {
+      Alert.alert("알림", "초대할 사용자의 UID를 입력해주세요.");
+      return;
+    }
+    Alert.alert("초대 완료 (Mock)", `${uid}님에게 그룹 초대장을 보냈습니다.`);
+    setIsInviteVisible(false);
+    setTargetUid('');
+  };
 
   const handleUploadImage = () => {
     Alert.alert("인증하기", "갤러리에서 오늘 인증 사진을 선택하시겠습니까?");
@@ -47,14 +67,34 @@ export default function GoalDetailScreen() {
           <View style={styles.emojiCircle}>
             <Text style={{ fontSize: 40 }}>{emoji || '🎯'}</Text>
           </View>
-          <View style={[styles.badge, { backgroundColor: '#E8F3FF' }]}>
-            <Text style={[styles.badgeText, { color: '#3182F6' }]}>
-              개인 목표
+          <View style={[styles.badge, { backgroundColor: '#FFF0F0' }]}>
+            <Text style={[styles.badgeText, { color: '#FF5252' }]}>
+              그룹 챌린지
             </Text>
           </View>
           <Text style={styles.mainTitle}>{title}</Text>
           <Text style={styles.descriptionText}>{goalDetail.description}</Text>
         </View>
+
+        {/* 방장 전용 관리 카드 (isLeader가 true일 때만 노출) */}
+        {isLeader && (
+          <>
+            <View style={styles.leaderCard}>
+              <View style={styles.leaderHeader}>
+                <Ionicons name="shield-checkmark" size={18} color="#1B64DA" />
+                <Text style={styles.leaderTitleText}>그룹 관리자 전용</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.inviteBtn} 
+                onPress={() => setIsInviteVisible(true)}
+              >
+                <Ionicons name="person-add" size={18} color="#FFF" />
+                <Text style={styles.inviteBtnText}>새 멤버 초대하기</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.divider} />
+          </>
+        )}
 
         {/* 대시보드 */}
         <View style={styles.dashboard}>
@@ -109,6 +149,15 @@ export default function GoalDetailScreen() {
         </ScrollView>
       </ScrollView>
 
+      {/* 초대 모달 */}
+      <InviteMemberModal 
+        visible={isInviteVisible}
+        onClose={() => setIsInviteVisible(false)}
+        onSubmit={handleInviteSubmit}
+        uid={targetUid}
+        setUid={setTargetUid}
+      />
+
       {/* 하단 고정 버튼 */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadImage}>
@@ -119,7 +168,6 @@ export default function GoalDetailScreen() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -184,6 +232,46 @@ const styles = StyleSheet.create({
   descriptionText: {
     fontSize: 15,
     color: '#8B95A1'
+  },
+
+  // 방장 전용 카드
+  leaderCard: {
+    backgroundColor: '#E8F3FF',
+    margin: 20,
+    padding: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#D0E4FF'
+  },
+  leaderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16
+  },
+  leaderTitleText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1B64DA',
+    marginLeft: 6
+  },
+  inviteBtn: {
+    backgroundColor: '#3182F6',
+    flexDirection: 'row',
+    paddingVertical: 14,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  inviteBtnText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    marginLeft: 8
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#c2c2c2',
+    marginHorizontal: 24,
+    marginBottom: 8,
   },
 
   // 대시보드
