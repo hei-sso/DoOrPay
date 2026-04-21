@@ -1,9 +1,46 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import NotificationModal from '../../components/NotificationModal';
 
 export default function HomeScreen() {
   const router = useRouter();
+  // any 혹은 인터페이스를 사용하여 타입 오류 해결
+  const [userData, setUserData] = useState<any>(null);
+  const [invites, setInvites] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isNotiVisible, setIsNotiVisible] = useState(false);
+
+  // Mock 데이터
+  const groupChallenges = [
+    { id: 'goal_2', title: '아침 7시 기상 인증', type: 'group', amount: 2500, emoji: '⏰', leaderId: 'leader_uid_123' },
+  ];
+
+  // 알림 Mock 데이터
+  const [mockInvites] = useState([
+    { fromNickname: 'ABC', groupTitle: '새벽 조깅 챌린지', status: 'pending' },
+    { fromNickname: 'ㄱㄴㄷ', groupTitle: '매일 영단어 외우기', status: 'pending' },
+  ]);
+
+  useEffect(() => {
+    const user = auth().currentUser;
+    if (!user) return;
+
+    const unsubscribe = firestore()
+      .collection('users')
+      .doc(user.uid)
+      .onSnapshot(doc => {
+        if (doc?.exists()) setUserData(doc.data());
+        setLoading(false);
+      }, () => setLoading(false));
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} color="#3182F6" />;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F2F4F6' }}>
@@ -11,44 +48,65 @@ export default function HomeScreen() {
         {/* 상단 프로필 & 알림 */}
         <View style={styles.topBar}>
           <View>
-            <Text style={styles.userTitle}>김OO님의</Text>
+            <Text style={styles.userTitle}>{userData?.nickname || '사용자'}님의</Text>
             <Text style={styles.mainTitle}>오늘의 습관</Text>
           </View>
-          <TouchableOpacity style={styles.notiBtn}>
+          <TouchableOpacity style={styles.notiBtn} onPress={() => setIsNotiVisible(true)}>
             <Ionicons name="notifications-outline" size={24} color="#1A1F27" />
+            {/* 알림이 있으면 빨간 점 표시 */}
+            {mockInvites.length > 0 && <View style={styles.badgeDot} />}
           </TouchableOpacity>
         </View>
 
-        {/* 리스크 보드 카드 (현재 진행 상황) */}
+        {/* 리스크 보드 카드 */}
         <View style={styles.riskCard}>
           <View style={styles.riskHeader}>
             <Text style={styles.riskLabel}>현재 걸려있는 포인트</Text>
-            <View style={styles.tag}><Text style={styles.tagText}>진행중</Text></View>
+            <View style={styles.tag}><Text style={styles.tagText}>완료</Text></View>
           </View>
-          <Text style={styles.riskAmount}>5,000 포인트</Text>
+          {/* wallet 필드 접근 시 오류 방지 */}
+          <Text style={styles.riskAmount}>
+            {userData?.wallet?.locked?.toLocaleString() || 0} 포인트
+          </Text>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: '65%' }]} />
+            <View style={[styles.progressFill, { width: '100%' }]} />
           </View>
-          <Text style={styles.progressInfo}>오늘 10개 중 6개 달성</Text>
+          <Text style={styles.progressInfo}>오늘 10개 중 10개 달성</Text>
         </View>
 
-        {/* 챌린지 섹션 */}
+        {/* 그룹 챌린지 섹션 */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>그룹 챌린지 🔥</Text>
           <TouchableOpacity><Text style={styles.moreText}>전체보기</Text></TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.challengeItem}>
-          <View style={styles.itemEmoji}><Text style={{fontSize: 24}}>🏃‍♂️</Text></View>
-          <View style={{flex: 1}}>
-            <Text style={styles.itemTitle}>아침 7시 기상 인증</Text>
-            <Text style={styles.itemSub}>총 2,500 포인트 대기 중</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#D1D6DB" />
-        </TouchableOpacity>
+        {groupChallenges.map((item) => (
+          <TouchableOpacity 
+            key={item.id}
+            style={styles.challengeItem}
+            onPress={() => router.push({
+              pathname: '/goal-detail' as any,
+              params: { ...item }
+            })}
+          >
+            <View style={styles.itemEmoji}><Text style={{fontSize: 24}}>{item.emoji}</Text></View>
+            <View style={{flex: 1}}>
+              <Text style={styles.itemTitle}>{item.title}</Text>
+              <Text style={styles.itemSub}>총 {item.amount.toLocaleString()} 포인트 대기 중</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#D1D6DB" />
+          </TouchableOpacity>
+        ))}
       </ScrollView>
 
-      {/* 우측 하단 플로팅 버튼(목표 생성 바로가기) */}
+      {/* 알림 모달 연결 */}
+      <NotificationModal 
+        visible={isNotiVisible} 
+        onClose={() => setIsNotiVisible(false)} 
+        invites={mockInvites} 
+      />
+
+      {/* 우측 하단 플로팅 버튼 */}
       <TouchableOpacity 
         style={styles.fab} 
         onPress={() => router.push('/create-goal')}
@@ -88,6 +146,17 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  badgeDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF5252',
+    borderWidth: 1.5,
+    borderColor: '#FFF'
   },
   riskCard: {
     marginHorizontal: 20,

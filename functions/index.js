@@ -44,9 +44,12 @@ exports.getWallet = getWallet;
 exports.walletLock = walletLock;
 exports.walletUnlock = walletUnlock;
 exports.updateGoalStatus = updateGoalStatus;
+<<<<<<< HEAD
 exports.createChallenge = createChallenge;
 exports.respondChallengeInvite = respondChallengeInvite;
 exports.inviteChallengeMember = inviteChallengeMember;
 exports.getMyInvitations = getMyInvitations;
 
+=======
+>>>>>>> main
 // exports.walletDistribute = walletDistribute;
