@@ -17,7 +17,7 @@ const { finishGoal } = require("./src/goals/finishGoal");
 // challenges
 const { createChallenge } = require("./src/challenges/createChallenge");
 const { respondChallengeInvite } = require("./src/challenges/respondChallengeInvite");
-const { invateChallengeMember } = require("./src/challenges/invateChallengeMember");
+const { inviteChallengeMember } = require("./src/challenges/inviteChallengeMember");
 const { getMyInvitations } = require("./src/challenges/getMyInvitations");
 
 //wallet
@@ -46,7 +46,7 @@ exports.walletUnlock = walletUnlock;
 exports.updateGoalStatus = updateGoalStatus;
 exports.createChallenge = createChallenge;
 exports.respondChallengeInvite = respondChallengeInvite;
-exports.inviteChallengeMember = invateChallengeMember;
+exports.inviteChallengeMember = inviteChallengeMember;
 exports.getMyInvitations = getMyInvitations;
 
 // exports.walletDistribute = walletDistribute;

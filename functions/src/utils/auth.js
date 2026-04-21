@@ -1,7 +1,6 @@
 const admin = require("firebase-admin");
 
 async function getUidFromRequest(req) {
-   
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {

@@ -31,6 +31,7 @@ exports.createChargeOrder = functions
         paymentKey: null,
         description: "포인트 충전 요청",
         createdAt: new Date(),
+        processingAt: null,
         approvedAt: null,
         rejectedAt: null,
         rejectReason: null,

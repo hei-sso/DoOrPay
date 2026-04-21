@@ -32,23 +32,51 @@ exports.confirmChargePayment = functions
       }
 
       txDoc = txSnapshot.docs[0];
-      const txData = txDoc.data();
+      const txRef = db.collection("transactions").doc(txDoc.id);
 
-      if (txData.status !== "pending") {
-        return res.status(409).json({ error: "Transaction is not pending" });
-      }
+      await db.runTransaction(async (transaction) => {
+        const txDocInside = await transaction.get(txRef);
 
-      if (txData.amount !== parsedAmount) {
-        await db.collection("transactions").doc(txDoc.id).update({
-          status: "rejected",
-          rejectedAt: new Date(),
-          rejectReason: "Amount mismatch",
+        if (!txDocInside.exists) {
+          const error = new Error("Transaction not found");
+          error.statusCode = 404;
+          throw error;
+        }
+
+        const txData = txDocInside.data();
+
+        if (txData.status === "processing") {
+          const error = new Error("Transaction is already processing");
+          error.statusCode = 409;
+          throw error;
+        }
+
+        if (txData.status !== "pending") {
+          const error = new Error("Transaction is not pending");
+          error.statusCode = 409;
+          throw error;
+        }
+
+        if (txData.amount !== parsedAmount) {
+          transaction.update(txRef, {
+            status: "rejected",
+            rejectedAt: new Date(),
+            rejectReason: "Amount mismatch",
+            paymentKey: paymentKey || null,
+            tossError: null,
+          });
+
+          const error = new Error("Amount mismatch");
+          error.statusCode = 400;
+          throw error;
+        }
+
+        transaction.update(txRef, {
+          status: "processing",
+          processingAt: new Date(),
           paymentKey: paymentKey || null,
-          tossError: null,
         });
-
-        return res.status(400).json({ error: "Amount mismatch" });
-      }
+      });
 
       let tossResult;
       try {
@@ -58,11 +86,10 @@ exports.confirmChargePayment = functions
           amount: parsedAmount,
         });
       } catch (error) {
-        await db.collection("transactions").doc(txDoc.id).update({
+        await txRef.update({
           status: "rejected",
           rejectedAt: new Date(),
           rejectReason: error.message || "Toss confirm failed",
-          paymentKey: paymentKey || null,
           tossError: error.details || null,
         });
 
@@ -73,7 +100,6 @@ exports.confirmChargePayment = functions
       }
 
       const userRef = db.collection("users").doc(uid);
-      const txRef = db.collection("transactions").doc(txDoc.id);
 
       await db.runTransaction(async (transaction) => {
         const userDoc = await transaction.get(userRef);
@@ -93,8 +119,8 @@ exports.confirmChargePayment = functions
 
         const latestTxData = txDocInside.data();
 
-        if (latestTxData.status !== "pending") {
-          const error = new Error("Transaction already processed");
+        if (latestTxData.status !== "processing") {
+          const error = new Error("Transaction is not processing");
           error.statusCode = 409;
           throw error;
         }
@@ -113,7 +139,6 @@ exports.confirmChargePayment = functions
         transaction.update(txRef, {
           type: "deposit",
           status: "approved",
-          paymentKey,
           approvedAt: new Date(),
           rejectedAt: null,
           rejectReason: null,
@@ -135,11 +160,20 @@ exports.confirmChargePayment = functions
 
       if (txDoc) {
         try {
-          await db.collection("transactions").doc(txDoc.id).update({
-            status: "rejected",
-            rejectedAt: new Date(),
-            rejectReason: error.message || "Internal Server Error",
-          });
+          const txRef = db.collection("transactions").doc(txDoc.id);
+          const latestTxDoc = await txRef.get();
+
+          if (latestTxDoc.exists) {
+            const latestTxData = latestTxDoc.data();
+
+            if (latestTxData.status === "pending" || latestTxData.status === "processing") {
+              await txRef.update({
+                status: "rejected",
+                rejectedAt: new Date(),
+                rejectReason: error.message || "Internal Server Error",
+              });
+            }
+          }
         } catch (updateError) {
           console.error("failed to update transaction status:", updateError);
         }
