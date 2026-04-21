@@ -48,10 +48,14 @@ export default function GoalTabScreen() {
           <TouchableOpacity 
             key={goal.id} 
             style={styles.goalItemCard}
-            onPress={() => router.push({
-              pathname: '/goal-detail' as any,
-              params: { ...goal }
-            })}
+            onPress={() =>
+              router.push({
+                pathname: goal.type === 'group'
+                  ? '/challenge-detail'
+                  : '/goal-detail',
+                params: { ...goal }
+              })
+            }
           >
             <View style={styles.goalEmojiBox}>
               <Text style={{ fontSize: 20 }}>{goal.emoji}</Text>
