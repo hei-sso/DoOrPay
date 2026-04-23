@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   // 리스크 보드 카드
   riskCard: {
     alignSelf: 'center',
-    width: '60%', 
+    width: '90%', 
     padding: 16,
     backgroundColor: '#FFF',
     borderRadius: 24,
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 8,
     color: '#1A1F27',
-    textAlign: 'center'
+    textAlign: 'right'
   },
   // 섹션 & 리스트
   sectionHeader: {
