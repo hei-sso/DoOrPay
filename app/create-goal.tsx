@@ -4,10 +4,13 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { createPersonalGoal } from '@/services/goalApi';
 
+const EMOJIS = ['💧', '🏃', '📚', '🥦', '🧘', '⏰', '✍️', '🍏', '💪', '🔋'];
+
 export default function CreateGoalScreen() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
+  const [selectedEmoji, setSelectedEmoji] = useState(EMOJIS[0]);
   const [loading, setLoading] = useState(false);
 
   const handleCreate = async () => {
@@ -17,9 +20,9 @@ export default function CreateGoalScreen() {
 
     try {
       setLoading(true);
-      await createPersonalGoal(title, parsedAmount, 7); // 7일짜리 목표 생성
+      await createPersonalGoal(title, parsedAmount, selectedEmoji, 7);
       Alert.alert('성공', '개인 목표가 생성되었습니다!', [
-        { text: '확인', onPress: () => router.back() } // 생성 후 뒤로 가기
+        { text: '확인', onPress: () => router.back() }
       ]);
     } catch (error: any) {
       Alert.alert('목표 생성 실패', error.message);
@@ -38,7 +41,20 @@ export default function CreateGoalScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.container} contentContainerStyle={{ padding: 24 }}>
+      <ScrollView style={{ flex: 1, backgroundColor: '#FFF' }} contentContainerStyle={{ padding: 24 }}>
+        <Text style={styles.label}>아이콘 선택</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiList}>
+          {EMOJIS.map(emoji => (
+            <TouchableOpacity 
+              key={emoji} 
+              onPress={() => setSelectedEmoji(emoji)}
+              style={[styles.emojiItem, selectedEmoji === emoji && styles.selectedEmojiItem]}
+            >
+              <Text style={{ fontSize: 24 }}>{emoji}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
         <Text style={styles.label}>어떤 습관을 만들고 싶나요?</Text>
         <TextInput 
           style={styles.input} 
@@ -188,5 +204,25 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: 'bold',
     fontSize: 18
+  },
+  // 이모지
+  emojiList: {
+    flexDirection: 'row',
+    marginBottom: 20
+  },
+  emojiItem: {
+    width: 54,
+    height: 54,
+    backgroundColor: '#F2F4F6',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: 'transparent'
+  },
+  selectedEmojiItem: {
+    borderColor: '#3182F6',
+    backgroundColor: '#E8F3FF'
   }
 });

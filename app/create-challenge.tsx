@@ -4,11 +4,14 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { createGroupChallenge } from '@/services/challengeApi';
 
+const EMOJIS = ['💧', '🏃', '📚', '🥦', '🧘', '⏰', '✍️', '🍏', '💪', '🔋'];
+
 export default function CreateChallengeScreen() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
+  const [selectedEmoji, setSelectedEmoji] = useState(EMOJIS[0]);
   const [loading, setLoading] = useState(false);
 
   const handleCreate = async () => {
@@ -18,7 +21,7 @@ export default function CreateChallengeScreen() {
 
     try {
       setLoading(true);
-      await createGroupChallenge(title, description, parsedAmount, 7);
+      await createGroupChallenge(title, description, parsedAmount, selectedEmoji, 7);
       Alert.alert('성공', '그룹 챌린지 방이 생성되었습니다!', [
         { text: '확인', onPress: () => router.back() }
       ]);
@@ -39,7 +42,20 @@ export default function CreateChallengeScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
+      <ScrollView style={{ flex: 1, backgroundColor: '#FFF' }} contentContainerStyle={{ padding: 24 }}>
+        <Text style={styles.label}>아이콘 선택</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiList}>
+          {EMOJIS.map(emoji => (
+            <TouchableOpacity 
+              key={emoji} 
+              onPress={() => setSelectedEmoji(emoji)}
+              style={[styles.emojiItem, selectedEmoji === emoji && styles.selectedEmojiItem]}
+            >
+              <Text style={{ fontSize: 24 }}>{emoji}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
         <Text style={styles.label}>챌린지 이름</Text>
         <TextInput style={styles.input} placeholder="예) 미라클 모닝 10일 인증" />
 
@@ -122,5 +138,25 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: 'bold',
     fontSize: 18
+  },
+  // 이모지
+  emojiList: {
+    flexDirection: 'row',
+    marginBottom: 20
+  },
+  emojiItem: {
+    width: 54,
+    height: 54,
+    backgroundColor: '#F2F4F6',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: 'transparent'
+  },
+  selectedEmojiItem: {
+    borderColor: '#3182F6',
+    backgroundColor: '#E8F3FF'
   }
 });

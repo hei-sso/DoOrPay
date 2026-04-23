@@ -2,7 +2,7 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 
 // 1. 그룹 챌린지 생성 (Batch Write 적용)
-export async function createGroupChallenge(title: string, description: string, stakeAmount: number, days: number = 7) {
+export async function createGroupChallenge(title: string, description: string, stakeAmount: number, emoji: string, days: number = 7) {
   const user = auth().currentUser;
   if (!user) throw new Error('로그인이 필요합니다.');
 
@@ -31,6 +31,7 @@ export async function createGroupChallenge(title: string, description: string, s
     description,
     creatorId: user.uid,
     status: 'recruiting',
+    emoji,
     startDate: now,
     endDate: firestore.Timestamp.fromDate(endDate),
     totalStake: stakeAmount,

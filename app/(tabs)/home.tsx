@@ -1,23 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import NotificationModal from '../../components/NotificationModal';
+import { subscribeToMyChallenges } from '@/services/challengeApi';
+import { Calendar, LocaleConfig } from 'react-native-calendars';
+
+// 달력 한국어 설정
+LocaleConfig.locales['ko'] = {
+  monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+  monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+  dayNames: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
+  dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
+  today: '오늘'
+};
+LocaleConfig.defaultLocale = 'ko';
 
 export default function HomeScreen() {
   const router = useRouter();
-  // any 혹은 인터페이스를 사용하여 타입 오류 해결
   const [userData, setUserData] = useState<any>(null);
-  const [invites, setInvites] = useState<any[]>([]);
+  const [challenges, setChallenges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isNotiVisible, setIsNotiVisible] = useState(false);
-
-  // Mock 데이터
-  const groupChallenges = [
-    { id: 'goal_2', title: '아침 7시 기상 인증', type: 'group', amount: 2500, emoji: '⏰', leaderId: 'leader_uid_123' },
-  ];
+  
+  // 선택된 날짜 상태 (기본값: 오늘)
+  const [selectedDate, setSelectedDate] = useState('');
 
   // 알림 Mock 데이터
   const [mockInvites] = useState([
@@ -29,15 +38,22 @@ export default function HomeScreen() {
     const user = auth().currentUser;
     if (!user) return;
 
-    const unsubscribe = firestore()
+    const unsubUser = firestore()
       .collection('users')
       .doc(user.uid)
       .onSnapshot(doc => {
         if (doc?.exists()) setUserData(doc.data());
-        setLoading(false);
-      }, () => setLoading(false));
+      }, err => console.error(err));
 
-    return () => unsubscribe();
+    const unsubChallenges = subscribeToMyChallenges(user.uid, (list) => {
+      setChallenges(list);
+      setLoading(false);
+    });
+
+    return () => { 
+      unsubUser(); 
+      unsubChallenges(); 
+    };
   }, []);
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} color="#3182F6" />;
@@ -58,20 +74,44 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* 한 달 치 달력 카드 */}
+        <View style={styles.calendarWrapper}>
+          <Calendar
+            // 한국 시간에 맞춘 오늘 날짜 초기화 (YYYY-MM-DD)
+            current={new Date().toISOString().split('T')[0]}
+            onDayPress={(day: any) => setSelectedDate(day.dateString)}
+            markedDates={{
+              [selectedDate]: { selected: true, disableTouchEvent: true, selectedColor: '#3182F6' }
+            }}
+            theme={{
+              backgroundColor: '#FFF',
+              calendarBackground: '#FFF',
+              textSectionTitleColor: '#8B95A1',
+              selectedDayBackgroundColor: '#3182F6',
+              selectedDayTextColor: '#FFF',
+              todayTextColor: '#3182F6',
+              dayTextColor: '#4E5968',
+              textDisabledColor: '#D1D6DB',
+              arrowColor: '#1A1F27',
+              monthTextColor: '#1A1F27',
+              textMonthFontWeight: 'bold',
+              textDayFontSize: 15,
+              textMonthFontSize: 18,
+            }}
+            // 달력 헤더 월 포맷 (예: 2026년 4월)
+            monthFormat={'yyyy년 MM월'}
+          />
+        </View>
+
         {/* 리스크 보드 카드 */}
         <View style={styles.riskCard}>
           <View style={styles.riskHeader}>
-            <Text style={styles.riskLabel}>현재 걸려있는 포인트</Text>
-            <View style={styles.tag}><Text style={styles.tagText}>완료</Text></View>
+            <Text style={styles.riskLabel}>쌓여있는 예치금</Text>
           </View>
           {/* wallet 필드 접근 시 오류 방지 */}
           <Text style={styles.riskAmount}>
-            {userData?.wallet?.locked?.toLocaleString() || 0} 포인트
+            {userData?.wallet?.locked?.toLocaleString() || 0} P
           </Text>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: '100%' }]} />
-          </View>
-          <Text style={styles.progressInfo}>오늘 10개 중 10개 달성</Text>
         </View>
 
         {/* 그룹 챌린지 섹션 */}
@@ -80,23 +120,31 @@ export default function HomeScreen() {
           <TouchableOpacity><Text style={styles.moreText}>전체보기</Text></TouchableOpacity>
         </View>
 
-        {groupChallenges.map((item) => (
-          <TouchableOpacity 
-            key={item.id}
-            style={styles.challengeItem}
-            onPress={() => router.push({
-              pathname: '/goal-detail' as any,
-              params: { ...item }
-            })}
-          >
-            <View style={styles.itemEmoji}><Text style={{fontSize: 24}}>{item.emoji}</Text></View>
-            <View style={{flex: 1}}>
-              <Text style={styles.itemTitle}>{item.title}</Text>
-              <Text style={styles.itemSub}>총 {item.amount.toLocaleString()} 포인트 대기 중</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#D1D6DB" />
-          </TouchableOpacity>
-        ))}
+        {challenges.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>참여 중인 챌린지가 없어요.</Text>
+          </View>
+        ) : (
+          challenges.map((item) => (
+            <TouchableOpacity 
+              key={item.id}
+              style={styles.challengeItem}
+              onPress={() => router.push({
+                pathname: '/challenge-detail' as any,
+                params: { ...item }
+              })}
+            >
+              <View style={styles.itemEmoji}>
+                <Text style={{fontSize: 24}}>{item.emoji || '🔥'}</Text>
+              </View>
+              <View style={{flex: 1}}>
+                <Text style={styles.itemTitle}>{item.title}</Text>
+                <Text style={styles.itemSub}>총 {item.totalStake?.toLocaleString() || 0} 포인트</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#D1D6DB" />
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
 
       {/* 알림 모달 연결 */}
@@ -120,18 +168,18 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor:
-    '#F2F4F6'
+    backgroundColor: '#F2F4F6'
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
-    paddingTop: 40
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 20
   },
   userTitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#4E5968'
   },
   mainTitle: {
@@ -158,15 +206,31 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#FFF'
   },
-  riskCard: {
+  // 달력
+  calendarWrapper: {
     marginHorizontal: 20,
-    padding: 24,
+    marginBottom: 20,
+    borderRadius: 24,
     backgroundColor: '#FFF',
-    borderRadius: 28,
+    overflow: 'hidden', // 모서리 둥글게
+    padding: 10,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 10,
-    elevation: 3
+    elevation: 3,
+  },
+  // 리스크 보드 카드
+  riskCard: {
+    alignSelf: 'center',
+    width: '60%', 
+    padding: 16,
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+    marginBottom: 10
   },
   riskHeader: {
     flexDirection: 'row',
@@ -174,48 +238,23 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   riskLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#8B95A1'
   },
-  tag: {
-    backgroundColor: '#E8F3FF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6
-  },
-  tagText: {
-    color: '#1B64DA',
-    fontSize: 12,
-    fontWeight: 'bold'
-  },
   riskAmount: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginVertical: 12,
-    color: '#1A1F27'
+    marginTop: 8,
+    color: '#1A1F27',
+    textAlign: 'center'
   },
-  progressTrack: {
-    height: 8,
-    backgroundColor: '#F2F4F6',
-    borderRadius: 4,
-    marginTop: 8
-  },
-  progressFill: {
-    height: 8,
-    backgroundColor: '#3182F6',
-    borderRadius: 4
-  },
-  progressInfo: {
-    marginTop: 12,
-    color: '#4E5968',
-    fontSize: 13
-  },
+  // 섹션 & 리스트
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    marginTop: 32,
+    marginTop: 20,
     marginBottom: 16
   },
   sectionTitle: {
@@ -231,16 +270,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 20,
-    padding: 20,
+    padding: 18,
     backgroundColor: '#FFF',
     borderRadius: 20,
     marginBottom: 12
   },
   itemEmoji: {
-    width: 50,
-    height: 50,
+    width: 48,
+    height: 48,
     backgroundColor: '#F9FAFB',
-    borderRadius: 16,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16
@@ -255,21 +294,28 @@ const styles = StyleSheet.create({
     color: '#8B95A1',
     marginTop: 4
   },
-  // FAB 스타일
+  emptyCard: {
+    padding: 40,
+    alignItems: 'center'
+  },
+  emptyText: {
+    color: '#8B95A1',
+    fontSize: 15
+  },
   fab: {
     position: 'absolute',
-    bottom: 135, // 탭바 위로 배치
-    right: 15,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    bottom: 120,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#3182F6',
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 5,
     shadowColor: '#000',
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 5
+    shadowRadius: 8
   }
 });
