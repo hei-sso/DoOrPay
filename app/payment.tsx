@@ -5,6 +5,14 @@ import { Alert, Linking, Platform, ActivityIndicator } from 'react-native';
 import { generatePaymentHTML, parseSuccessURL, isSuccessURL, isFailURL } from '@/services/paymentApi';
 import { confirmChargePayment } from '@/services/walletApi';
 
+// URL이 앱스킴인지 확인하는 함수
+const noAppScheme = ["http", "https", "about", "data", "javascript", "file"];
+const isAppScheme = (url: string): boolean => {
+  if (!url) return false;
+  const scheme = url.split("://")[0];
+  return !noAppScheme.includes(scheme);
+};
+
 export default function PaymentScreen() {
   const router = useRouter();
   const { orderId, amount, orderName, customerName } = useLocalSearchParams();
@@ -14,6 +22,7 @@ export default function PaymentScreen() {
     amount: amount as string,
     orderName: orderName as string,
     customerName: customerName as string,
+    appScheme: 'doorpay://'
   });
 
   const handleNavigationStateChange = async (navState: WebViewNavigation) => {
@@ -42,34 +51,31 @@ export default function PaymentScreen() {
     <WebView
       source={{ html }}
       onNavigationStateChange={handleNavigationStateChange}
-      // 외부 앱 실행(Scheme) 처리 로직
       onShouldStartLoadWithRequest={(request) => {
         const { url } = request;
 
-        // http나 https가 아닌 경우 (앱 스킴 처리)
-        if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('about:blank')) {
+        if (isAppScheme(url)) {
+          // [Android] intent: 스킴 특수 처리
           if (Platform.OS === 'android' && url.startsWith('intent:')) {
-            // 안드로이드 intent 스킴 특수 처리
-            const parsedUrl = url.replace('intent:', '').split('#Intent;')[0];
-            const finalUrl = parsedUrl.startsWith('//') ? `https:${parsedUrl}` : parsedUrl;
+            const packageMatch = url.match(/package=([^;]+)/);
+            const schemeMatch = url.match(/scheme=([^;]+)/);
             
-            Linking.canOpenURL(url).then((supported) => {
-              if (supported) {
-                Linking.openURL(url);
-              } else {
-                // 앱이 설치되어 있지 않을 경우 마켓으로 유도하거나 안내
-                Alert.alert('알림', '결제 앱이 설치되어 있지 않습니다.');
-              }
-            });
-            return false;
+            if (packageMatch && schemeMatch) {
+              const customSchemeUrl = url.replace('intent://', `${schemeMatch[1]}://`).split('#Intent')[0];
+              
+              Linking.openURL(customSchemeUrl).catch(() => {
+                Linking.openURL(`market://details?id=${packageMatch[1]}`);
+              });
+              return false;
+            }
           }
 
-          // iOS 및 기타 일반 스킴 처리
+          // [iOS] 및 일반 앱 스킴 실행 (안드로이드의 커스텀 스킴 포함)
           Linking.openURL(url).catch(() => {
-            Alert.alert('알림', '해당 결제를 실행할 수 있는 앱이 없습니다.');
+            Alert.alert('알림', '결제 앱이 설치되어 있지 않거나 실행할 수 없습니다.');
           });
           return false;
-        }
+        }        
         return true;
       }}
       style={{ flex: 1 }}
