@@ -1,23 +1,26 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import auth from '@react-native-firebase/auth';
 import InviteMemberModal from '../components/InviteMemberModal';
+import { inviteMember } from '@/services/inviteApi';
 
 const { width } = Dimensions.get('window');
 
 export default function ChallengeDetailScreen() {
   const router = useRouter();
-  const { id, title, amount, emoji, leaderId } = useLocalSearchParams();
+  const { id, title, amount, emoji, creatorId } = useLocalSearchParams(); 
 
-  // UI 테스트를 위해 현재 유저 UID를 leader_uid_123으로 가정
-  // leaderId가 'leader_uid_123'으로 넘어오면 방장 메뉴가 활성화됨
-  const currentUid = 'leader_uid_123';
-  const isLeader = currentUid === leaderId;
+  // 실제 접속 중인 유저의 UID 가져오기
+  const currentUser = auth().currentUser;
+  const currentUid = currentUser?.uid;
+  const isLeader = currentUid === creatorId;
 
   // 모달 상태 관리
   const [isInviteVisible, setIsInviteVisible] = useState(false);
   const [targetUid, setTargetUid] = useState('');
+  const [isInviting, setIsInviting] = useState(false);
 
   // Mock 데이터
   const [goalDetail] = useState({
@@ -34,14 +37,25 @@ export default function ChallengeDetailScreen() {
     ]
   });
 
-  const handleInviteSubmit = (uid: string) => {
+  const handleInviteSubmit = async (uid: string) => {
     if(!uid.trim()) {
       Alert.alert("알림", "초대할 사용자의 UID를 입력해주세요.");
       return;
     }
-    Alert.alert("초대 완료 (Mock)", `${uid}님에게 그룹 초대장을 보냈습니다.`);
-    setIsInviteVisible(false);
-    setTargetUid('');
+    
+    try {
+      setIsInviting(true);
+      // challengeId와 입력받은 상대방 UID를 넘겨줌
+      await inviteMember(id as string, uid);
+      
+      Alert.alert("초대 완료", "성공적으로 그룹 초대장을 보냈습니다.");
+      setIsInviteVisible(false);
+      setTargetUid('');
+    } catch (error: any) {
+      Alert.alert("초대 실패", error.message);
+    } finally {
+      setIsInviting(false);
+    }
   };
 
   const handleUploadImage = () => {
@@ -87,9 +101,16 @@ export default function ChallengeDetailScreen() {
               <TouchableOpacity 
                 style={styles.inviteBtn} 
                 onPress={() => setIsInviteVisible(true)}
+                disabled={isInviting} // 초대 보내는 중에는 버튼 비활성화
               >
-                <Ionicons name="person-add" size={18} color="#FFF" />
-                <Text style={styles.inviteBtnText}>새 멤버 초대하기</Text>
+                {isInviting ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="person-add" size={18} color="#FFF" />
+                    <Text style={styles.inviteBtnText}>새 멤버 초대하기</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
             <View style={styles.divider} />

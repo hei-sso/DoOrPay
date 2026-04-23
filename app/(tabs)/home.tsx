@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import NotificationModal from '../../components/NotificationModal';
 import { subscribeToMyChallenges } from '@/services/challengeApi';
+import { fetchMyInvitations, respondToInvite } from '@/services/inviteApi';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 
 // 달력 한국어 설정
@@ -28,11 +29,27 @@ export default function HomeScreen() {
   // 선택된 날짜 상태 (기본값: 오늘)
   const [selectedDate, setSelectedDate] = useState('');
 
-  // 알림 Mock 데이터
-  const [mockInvites] = useState([
-    { fromNickname: 'ABC', groupTitle: '새벽 조깅 챌린지', status: 'pending' },
-    { fromNickname: 'ㄱㄴㄷ', groupTitle: '매일 영단어 외우기', status: 'pending' },
-  ]);
+  // 초대장
+  const [invites, setInvites] = useState<any[]>([]);
+
+  // 초대장 목록 불러오기 함수
+  const loadInvites = async () => {
+    try {
+      const data = await fetchMyInvitations();
+      // 'pending' 상태인 초대장만 필터링해서 보여주기
+      const pendingInvites = data.filter((inv: any) => inv.status === 'pending');
+      setInvites(pendingInvites);
+    } catch (error) {
+      console.error("초대장 불러오기 실패:", error);
+    }
+  };
+
+  // 화면이 포커스될 때마다(다른 화면 갔다가 홈으로 돌아올 때) 초대장 목록 새로고침
+  useFocusEffect(
+    useCallback(() => {
+      loadInvites();
+    }, [])
+  );
 
   useEffect(() => {
     const user = auth().currentUser;
@@ -56,6 +73,24 @@ export default function HomeScreen() {
     };
   }, []);
 
+  // 초대장 수락/거절 핸들러
+  const handleRespondToInvite = async (invitationId: string, action: 'accepted' | 'rejected') => {
+    try {
+      await respondToInvite(invitationId, action);
+      Alert.alert('알림', action === 'accepted' ? '초대를 수락했습니다!' : '초대를 거절했습니다.');
+      
+      // 처리 완료된 초대장을 화면에서 즉시 제거
+      setInvites(prev => prev.filter(inv => inv.invitationId !== invitationId));
+      
+      // 수락했을 경우 내 챌린지 목록이 갱신되어야 하므로 모달을 닫아줌
+      if (action === 'accepted') {
+        setIsNotiVisible(false);
+      }
+    } catch (error: any) {
+      Alert.alert('오류', error.message || '초대 처리에 실패했습니다.');
+    }
+  };
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} color="#3182F6" />;
 
   return (
@@ -69,8 +104,8 @@ export default function HomeScreen() {
           </View>
           <TouchableOpacity style={styles.notiBtn} onPress={() => setIsNotiVisible(true)}>
             <Ionicons name="notifications-outline" size={24} color="#1A1F27" />
-            {/* 알림이 있으면 빨간 점 표시 */}
-            {mockInvites.length > 0 && <View style={styles.badgeDot} />}
+            {/* 초대장이 있을 때만 빨간 점 표시 */}
+            {invites.length > 0 && <View style={styles.badgeDot} />}
           </TouchableOpacity>
         </View>
 
@@ -151,14 +186,12 @@ export default function HomeScreen() {
       <NotificationModal 
         visible={isNotiVisible} 
         onClose={() => setIsNotiVisible(false)} 
-        invites={mockInvites} 
+        invites={invites} 
+        onRespond={handleRespondToInvite}
       />
 
       {/* 우측 하단 플로팅 버튼 */}
-      <TouchableOpacity 
-        style={styles.fab} 
-        onPress={() => router.push('/create-goal')}
-      >
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/create-goal')}>
         <Ionicons name="add" size={32} color="#FFF" />
       </TouchableOpacity>
     </View>
