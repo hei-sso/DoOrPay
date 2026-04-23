@@ -2,7 +2,7 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 
 // 1. 개인 목표 생성 (Batch Write 적용)
-export async function createPersonalGoal(title: string, stakeAmount: number, emoji: string, days: number = 7) {
+export async function createPersonalGoal(title: string, stakeAmount: number, emoji: string, startDate: Date, endDate: Date) {
   const user = auth().currentUser;
   if (!user) throw new Error('로그인이 필요합니다.');
 
@@ -20,9 +20,6 @@ export async function createPersonalGoal(title: string, stakeAmount: number, emo
   }
 
   const now = firestore.Timestamp.now();
-  const endDate = new Date();
-  endDate.setDate(endDate.getDate() + days); // days일 뒤 종료
-
   const batch = db.batch();
 
   // 1) 목표 문서 생성
@@ -32,7 +29,7 @@ export async function createPersonalGoal(title: string, stakeAmount: number, emo
     title,
     stakeAmount,
     emoji,
-    startDate: now,
+    startDate: firestore.Timestamp.fromDate(startDate),
     endDate: firestore.Timestamp.fromDate(endDate),
     status: 'ongoing',
     createdAt: now,

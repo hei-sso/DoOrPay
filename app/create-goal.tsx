@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { createPersonalGoal } from '@/services/goalApi';
 
 const EMOJIS = ['💧', '🏃', '📚', '🥦', '🧘', '⏰', '✍️', '🍏', '💪', '🔋'];
@@ -13,6 +14,22 @@ export default function CreateGoalScreen() {
   const [selectedEmoji, setSelectedEmoji] = useState(EMOJIS[0]);
   const [loading, setLoading] = useState(false);
 
+  // 날짜 상태 관리 (기본값: 오늘 ~ 7일 뒤)
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date(new Date().setDate(new Date().getDate() + 7)));
+
+  // 모달 표시 여부 상태
+  const [isStartPickerVisible, setStartPickerVisibility] = useState(false);
+  const [isEndPickerVisible, setEndPickerVisibility] = useState(false);
+
+  // 날짜 포맷팅 (예: 2026.04.23)
+  const formatDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}.${m}.${d}`;
+  };
+
   const handleCreate = async () => {
     if (!title.trim()) return Alert.alert('알림', '목표 이름을 입력해주세요.');
     const parsedAmount = parseInt(amount, 10);
@@ -20,7 +37,7 @@ export default function CreateGoalScreen() {
 
     try {
       setLoading(true);
-      await createPersonalGoal(title, parsedAmount, selectedEmoji, 7);
+      await createPersonalGoal(title, parsedAmount, selectedEmoji, startDate, endDate);
       Alert.alert('성공', '개인 목표가 생성되었습니다!', [
         { text: '확인', onPress: () => router.back() }
       ]);
@@ -77,14 +94,16 @@ export default function CreateGoalScreen() {
 
         <Text style={styles.label}>기간 설정</Text>
         <View style={styles.dateRow}>
-          <TouchableOpacity style={styles.dateBtn}>
-            <Text style={styles.dateText}>오늘부터</Text>
-            <Ionicons name="calendar-outline" size={20} color="#8B95A1" />
+          {/* 시작일 버튼 */}
+          <TouchableOpacity style={styles.dateBtn} onPress={() => setStartPickerVisibility(true)}>
+            <Text style={[styles.dateText, { fontWeight: 'bold', color: '#1A1F27' }]}>{formatDate(startDate)}</Text>
+            <Ionicons name="calendar-outline" size={20} color="#3182F6" />
           </TouchableOpacity>
           <Text style={{ marginHorizontal: 10 }}>~</Text>
-          <TouchableOpacity style={styles.dateBtn}>
-            <Text style={styles.dateText}>1주일 뒤</Text>
-            <Ionicons name="calendar-outline" size={20} color="#8B95A1" />
+          {/* 종료일 버튼 */}
+          <TouchableOpacity style={styles.dateBtn} onPress={() => setEndPickerVisibility(true)}>
+            <Text style={[styles.dateText, { fontWeight: 'bold', color: '#1A1F27' }]}>{formatDate(endDate)}</Text>
+            <Ionicons name="calendar-outline" size={20} color="#FF5252" />
           </TouchableOpacity>
         </View>
         
@@ -95,13 +114,40 @@ export default function CreateGoalScreen() {
 
       <View style={styles.bottomArea}>
         <TouchableOpacity style={styles.primaryBtn} onPress={handleCreate} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.primaryBtnText}>목표 시작하기</Text>
-          )}
+          {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>목표 시작하기</Text>}
         </TouchableOpacity>
       </View>
+
+      {/* 시작일 모달 */}
+      <DateTimePickerModal
+        isVisible={isStartPickerVisible}
+        mode="date"
+        date={startDate}
+        onConfirm={(date) => {
+          setStartDate(date);
+          // 시작일이 종료일보다 뒤로 가면 종료일도 자동으로 맞춰줌
+          if (date > endDate) setEndDate(date);
+          setStartPickerVisibility(false);
+        }}
+        onCancel={() => setStartPickerVisibility(false)}
+        confirmTextIOS="확인"
+        cancelTextIOS="취소"
+      />
+
+      {/* 종료일 모달 */}
+      <DateTimePickerModal
+        isVisible={isEndPickerVisible}
+        mode="date"
+        date={endDate}
+        minimumDate={startDate} // 종료일은 시작일 이전으로 선택 못하게 막음
+        onConfirm={(date) => {
+          setEndDate(date);
+          setEndPickerVisibility(false);
+        }}
+        onCancel={() => setEndPickerVisibility(false)}
+        confirmTextIOS="확인"
+        cancelTextIOS="취소"
+      />
     </KeyboardAvoidingView>
   );
 }

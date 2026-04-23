@@ -1,18 +1,37 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { createGroupChallenge } from '@/services/challengeApi';
 
-const EMOJIS = ['💧', '🏃', '📚', '🥦', '🧘', '⏰', '✍️', '🍏', '💪', '🔋'];
+const EMOJIS = ['🔥', '💪', '🏃', '🤝', '🎯', '📈', '✨', '🏆', '🙌', '🚀'];
 
 export default function CreateChallengeScreen() {
   const router = useRouter();
+  
+  // 상태 관리
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState(EMOJIS[0]);
   const [loading, setLoading] = useState(false);
+
+  // 날짜 상태 (기본값: 오늘 ~ 7일 뒤)
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date(new Date().setDate(new Date().getDate() + 7)));
+  
+  // 날짜 피커 모달 상태
+  const [isStartPickerVisible, setStartPickerVisibility] = useState(false);
+  const [isEndPickerVisible, setEndPickerVisibility] = useState(false);
+
+  // 날짜 포맷팅 (YYYY.MM.DD)
+  const formatDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}.${m}.${d}`;
+  };
 
   const handleCreate = async () => {
     if (!title.trim() || !description.trim()) return Alert.alert('알림', '빈칸을 모두 채워주세요.');
@@ -21,7 +40,8 @@ export default function CreateChallengeScreen() {
 
     try {
       setLoading(true);
-      await createGroupChallenge(title, description, parsedAmount, selectedEmoji, 7);
+      // API 호출 시 시작일과 종료일 전달
+      await createGroupChallenge(title, description, parsedAmount, selectedEmoji, startDate, endDate);
       Alert.alert('성공', '그룹 챌린지 방이 생성되었습니다!', [
         { text: '확인', onPress: () => router.back() }
       ]);
@@ -42,7 +62,8 @@ export default function CreateChallengeScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={{ flex: 1, backgroundColor: '#FFF' }} contentContainerStyle={{ padding: 24 }}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 100 }}>
+        {/* 이모지 선택 */}
         <Text style={styles.label}>아이콘 선택</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiList}>
           {EMOJIS.map(emoji => (
@@ -57,29 +78,84 @@ export default function CreateChallengeScreen() {
         </ScrollView>
 
         <Text style={styles.label}>챌린지 이름</Text>
-        <TextInput style={styles.input} placeholder="예) 미라클 모닝 10일 인증" />
+        <TextInput 
+          style={styles.input} 
+          placeholder="예) 미라클 모닝 10일 인증" 
+          value={title}
+          onChangeText={setTitle}
+        />
 
         <Text style={styles.label}>챌린지 설명</Text>
         <TextInput 
           style={[styles.input, { height: 100, textAlignVertical: 'top' }]} 
           placeholder="참여 규칙과 인증 방법을 적어주세요." 
           multiline
+          value={description}
+          onChangeText={setDescription}
         />
 
         <Text style={styles.label}>1인당 참가비 (포인트)</Text>
-        <TextInput style={styles.input} placeholder="1,000" keyboardType="number-pad" />
+        <TextInput 
+          style={styles.input} 
+          placeholder="1,000" 
+          keyboardType="number-pad" 
+          value={amount}
+          onChangeText={setAmount}
+        />
         <Text style={styles.subText}>실패 시 성공한 사람들에게 포인트가 분배됩니다.</Text>
+
+        {/* 기간 설정 섹션 추가 */}
+        <Text style={styles.label}>기간 설정</Text>
+        <View style={styles.dateRow}>
+          {/* 시작일 버튼 */}
+          <TouchableOpacity style={styles.dateBtn} onPress={() => setStartPickerVisibility(true)}>
+            <Text style={[styles.dateText, { fontWeight: 'bold', color: '#1A1F27' }]}>{formatDate(startDate)}</Text>
+            <Ionicons name="calendar-outline" size={20} color="#3182F6" />
+          </TouchableOpacity>
+          <Text style={{ marginHorizontal: 10 }}>~</Text>
+          {/* 종료일 버튼 */}
+          <TouchableOpacity style={styles.dateBtn} onPress={() => setEndPickerVisibility(true)}>
+            <Text style={[styles.dateText, { fontWeight: 'bold', color: '#1A1F27' }]}>{formatDate(endDate)}</Text>
+            <Ionicons name="calendar-outline" size={20} color="#FF5252" />
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       <View style={styles.bottomArea}>
         <TouchableOpacity style={styles.primaryBtn} onPress={handleCreate} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.primaryBtnText}>챌린지 방 만들기</Text>
-          )}
+          {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>챌린지 방 만들기</Text>}
         </TouchableOpacity>
       </View>
+
+      {/* 시작일 선택 모달 */}
+      <DateTimePickerModal
+        isVisible={isStartPickerVisible}
+        mode="date"
+        date={startDate}
+        onConfirm={(date) => {
+          setStartDate(date);
+          if (date > endDate) setEndDate(date); // 시작일이 종료일보다 늦으면 종료일 자동 조정
+          setStartPickerVisibility(false);
+        }}
+        onCancel={() => setStartPickerVisibility(false)}
+        confirmTextIOS="확인"
+        cancelTextIOS="취소"
+      />
+
+      {/* 종료일 선택 모달 */}
+      <DateTimePickerModal
+        isVisible={isEndPickerVisible}
+        mode="date"
+        date={endDate}
+        minimumDate={startDate} // 시작일 이전은 선택 불가
+        onConfirm={(date) => {
+          setEndDate(date);
+          setEndPickerVisibility(false);
+        }}
+        onCancel={() => setEndPickerVisibility(false)}
+        confirmTextIOS="확인"
+        cancelTextIOS="취소"
+      />
     </View>
   );
 }
@@ -122,6 +198,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8B95A1',
     marginTop: 8
+  },
+    dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  dateBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F2F4F6',
+    padding: 16,
+    borderRadius: 12
+  },
+  dateText: {
+    fontSize: 15,
+    color: '#4E5968'
   },
   bottomArea: {
     padding: 24,
