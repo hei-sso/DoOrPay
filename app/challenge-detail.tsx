@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import auth from '@react-native-firebase/auth';
 import InviteMemberModal from '../components/InviteMemberModal';
 import { inviteMember } from '@/services/inviteApi';
+import MembersModal from '../components/MembersModal';
+import { subscribeToChallengeMembers } from '@/services/challengeApi';
 
 const { width } = Dimensions.get('window');
 
@@ -21,6 +23,17 @@ export default function ChallengeDetailScreen() {
   const [isInviteVisible, setIsInviteVisible] = useState(false);
   const [targetUid, setTargetUid] = useState('');
   const [isInviting, setIsInviting] = useState(false);
+  const [isMembersVisible, setIsMembersVisible] = useState(false);
+  const [members, setMembers] = useState<any[]>([]);
+
+  // 멤버 목록 실시간 구독
+  useEffect(() => {
+    if (!id) return;
+    const unsub = subscribeToChallengeMembers(id as string, (data) => {
+      setMembers(data);
+    });
+    return () => unsub();
+  }, [id]);
 
   // Mock 데이터
   const [goalDetail] = useState({
@@ -70,7 +83,7 @@ export default function ChallengeDetailScreen() {
           <Ionicons name="chevron-back" size={24} color="#1A1F27" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>목표 상세</Text>
-        <TouchableOpacity style={styles.iconBtn}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => setIsMembersVisible(true)}>
           <Ionicons name="ellipsis-horizontal" size={24} color="#1A1F27" />
         </TouchableOpacity>
       </View>
@@ -169,6 +182,13 @@ export default function ChallengeDetailScreen() {
           {/* 사진이 더 많아지면 여기에 추가 */}
         </ScrollView>
       </ScrollView>
+
+      {/* 참가자 목록 모달 */}
+      <MembersModal 
+        visible={isMembersVisible}
+        onClose={() => setIsMembersVisible(false)}
+        members={members}
+      />
 
       {/* 초대 모달 */}
       <InviteMemberModal 

@@ -47,3 +47,19 @@ export function subscribeToMyChallenges(uid: string, onUpdate: (challenges: any[
       onUpdate(challenges);
     }, err => console.error("Challenges Sub Error:", err));
 }
+
+// 참가자 현황 목록 실시간 구독 함수
+export function subscribeToChallengeMembers(challengeId: string, onUpdate: (members: any[]) => void) {
+  return firestore()
+    .collection('challenges')
+    .doc(challengeId)
+    .collection('members')
+    .orderBy('role', 'asc') 
+    .onSnapshot(snapshot => {
+      const members = snapshot?.docs.map(doc => ({ 
+        uid: doc.id, 
+        ...doc.data() 
+      })) || [];
+      onUpdate(members);
+    }, err => console.error("Members Sub Error:", err));
+}
