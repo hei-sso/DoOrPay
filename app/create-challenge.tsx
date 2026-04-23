@@ -1,10 +1,33 @@
-import React from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { createGroupChallenge } from '@/services/challengeApi';
 
 export default function CreateChallengeScreen() {
   const router = useRouter();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleCreate = async () => {
+    if (!title.trim() || !description.trim()) return Alert.alert('알림', '빈칸을 모두 채워주세요.');
+    const parsedAmount = parseInt(amount, 10);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return Alert.alert('알림', '올바른 참가비를 입력해주세요.');
+
+    try {
+      setLoading(true);
+      await createGroupChallenge(title, description, parsedAmount, 7);
+      Alert.alert('성공', '그룹 챌린지 방이 생성되었습니다!', [
+        { text: '확인', onPress: () => router.back() }
+      ]);
+    } catch (error: any) {
+      Alert.alert('챌린지 생성 실패', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -33,8 +56,12 @@ export default function CreateChallengeScreen() {
       </ScrollView>
 
       <View style={styles.bottomArea}>
-        <TouchableOpacity style={styles.primaryBtn}>
-          <Text style={styles.primaryBtnText}>챌린지 방 만들기</Text>
+        <TouchableOpacity style={styles.primaryBtn} onPress={handleCreate} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.primaryBtnText}>챌린지 방 만들기</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>

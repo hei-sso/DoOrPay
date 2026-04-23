@@ -1,12 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { createPersonalGoal } from '@/services/goalApi';
 
 export default function CreateGoalScreen() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleCreate = async () => {
+    if (!title.trim()) return Alert.alert('알림', '목표 이름을 입력해주세요.');
+    const parsedAmount = parseInt(amount, 10);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return Alert.alert('알림', '올바른 금액을 입력해주세요.');
+
+    try {
+      setLoading(true);
+      await createPersonalGoal(title, parsedAmount, 7); // 7일짜리 목표 생성
+      Alert.alert('성공', '개인 목표가 생성되었습니다!', [
+        { text: '확인', onPress: () => router.back() } // 생성 후 뒤로 가기
+      ]);
+    } catch (error: any) {
+      Alert.alert('목표 생성 실패', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -58,8 +78,12 @@ export default function CreateGoalScreen() {
       </ScrollView>
 
       <View style={styles.bottomArea}>
-        <TouchableOpacity style={styles.primaryBtn}>
-          <Text style={styles.primaryBtnText}>목표 시작하기</Text>
+        <TouchableOpacity style={styles.primaryBtn} onPress={handleCreate} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.primaryBtnText}>목표 시작하기</Text>
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
