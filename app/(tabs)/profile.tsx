@@ -59,6 +59,9 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>내 정보</Text>
+      </View>
       <View style={styles.profileHeader}>
         <View style={styles.avatar}>
           {userData?.profileImage ? (
@@ -88,6 +91,21 @@ const styles = StyleSheet.create({
     container: {
     flex: 1,
     backgroundColor: '#FFF'
+    },
+    header: {
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingTop: 60,
+      paddingBottom: 16,
+      backgroundColor: '#FFF',
+      borderBottomWidth: 1,
+      borderBottomColor: '#F2F4F6'
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: '#1A1F27'
     },
     profileHeader: {
     alignItems: 'center',

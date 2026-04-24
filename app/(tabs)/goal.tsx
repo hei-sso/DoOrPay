@@ -49,7 +49,7 @@ export default function GoalTabScreen() {
         <Text style={styles.headerTitle}>목표 관리</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 130 }}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120 }}>
         <Text style={styles.sectionTitle}>새로운 도전을 시작해보세요!</Text>
         
         {/* 개인 목표 생성 카드 */}
@@ -73,13 +73,13 @@ export default function GoalTabScreen() {
         </TouchableOpacity>
 
         {/* 진행 중인 목표 리스트 */}
-        <Text style={[styles.sectionTitle, { marginTop: 40 }]}>진행 중인 내 목표</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 40 }]}>진행 중인 목표</Text>
         
         {loading ? (
           <ActivityIndicator size="large" color="#3182F6" style={{ marginTop: 20 }} />
         ) : combinedGoals.length === 0 ? (
            <Text style={{ textAlign: 'center', color: '#8B95A1', marginTop: 20 }}>
-             진행 중인 목표가 없어요. 새로운 도전을 시작해 보세요!
+             아직 진행 중인 목표가 없어요.
            </Text>
         ) : (
           combinedGoals.map((goal) => {
@@ -134,12 +134,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F4F6'
   },
   header: {
-    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
     paddingTop: 60,
-    backgroundColor: '#FFF'
+    paddingBottom: 16,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F4F6'
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1A1F27'
   },
