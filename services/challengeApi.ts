@@ -11,6 +11,7 @@ async function getAuthToken(): Promise<string> {
 
 // 그룹 챌린지 생성
 export async function createGroupChallenge(title: string, description: string, stakeAmount: number, emoji: string, startDate: Date, endDate: Date) {
+  const user = auth().currentUser;
   const token = await getAuthToken();
 
   const response = await fetch(`${BASE_URL}/createChallenge`, {
@@ -22,7 +23,9 @@ export async function createGroupChallenge(title: string, description: string, s
       stakeAmount,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
+      creatorId: user?.uid,
       emoji,
+      type: 'group',
     }),
   });
 

@@ -24,7 +24,8 @@ export async function createPersonalGoal(title: string, stakeAmount: number, emo
       stakeAmount,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
-      emoji, 
+      emoji,
+      type: 'personal',
     }),
   });
 
