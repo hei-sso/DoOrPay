@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import firestore from '@react-native-firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
-import { uploadImageToStorage, submitVerification, subscribeToVerifications } from '@/services/verificationApi';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// API
+import { submitVerification, subscribeToVerifications, uploadImageToStorage } from '@/services/verificationApi';
+
+// Firebase
+import firestore from '@react-native-firebase/firestore';
 
 const { width } = Dimensions.get('window');
 

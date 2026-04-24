@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import auth from '@react-native-firebase/auth';
-import { subscribeToMyGoals } from '@/services/goalApi';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// API
 import { subscribeToMyChallenges } from '@/services/challengeApi';
+import { subscribeToMyGoals } from '@/services/goalApi';
+
+// Firebase
+import auth from '@react-native-firebase/auth';
 
 export default function GoalTabScreen() {
   const router = useRouter();

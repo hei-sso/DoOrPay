@@ -1,10 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// API
+import { createChargeOrder, subscribeToTransactions, subscribeToWallet } from '@/services/walletApi';
+
+// Components
 import AmountInputModal from '@/components/AmountInputModal';
-import { createChargeOrder, subscribeToWallet, subscribeToTransactions } from '@/services/walletApi';
+
+// Firebase
+import auth from '@react-native-firebase/auth';
 
 // Wallet 구조 정의
 interface WalletData {

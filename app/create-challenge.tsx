@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+
+// API
 import { createGroupChallenge } from '@/services/challengeApi';
 
 const EMOJIS = ['🔥', '💪', '🏃', '🤝', '🎯', '📈', '✨', '🏆', '🙌', '🚀'];
@@ -62,7 +64,7 @@ export default function CreateChallengeScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 100 }}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 50 }}>
         {/* 이모지 선택 */}
         <Text style={styles.label}>아이콘 선택</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiList}>

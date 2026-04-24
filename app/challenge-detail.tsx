@@ -1,15 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// API
+import { subscribeToChallengeMembers } from '@/services/challengeApi';
+import { inviteMember } from '@/services/inviteApi';
+import { submitVerification, subscribeToVerifications, uploadImageToStorage } from '@/services/verificationApi';
+
+// Components
+import InviteMemberModal from '@/components/InviteMemberModal';
+import MembersModal from '@/components/MembersModal';
+
+// Firebase
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
-import * as ImagePicker from 'expo-image-picker';
-import { inviteMember } from '@/services/inviteApi';
-import { subscribeToChallengeMembers } from '@/services/challengeApi';
-import { uploadImageToStorage, submitVerification, subscribeToVerifications } from '@/services/verificationApi';
-import InviteMemberModal from '../components/InviteMemberModal';
-import MembersModal from '../components/MembersModal';
 
 const { width } = Dimensions.get('window');
 

@@ -1,13 +1,19 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-import NotificationModal from '../../components/NotificationModal';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Calendar, LocaleConfig } from 'react-native-calendars';
+
+// API
 import { subscribeToMyChallenges } from '@/services/challengeApi';
 import { fetchMyInvitations, respondToInvite } from '@/services/inviteApi';
-import { Calendar, LocaleConfig } from 'react-native-calendars';
+
+// Components
+import NotificationModal from '@/components/NotificationModal';
+
+// Firebase
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
 // 달력 한국어 설정
 LocaleConfig.locales['ko'] = {

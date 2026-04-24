@@ -1,8 +1,10 @@
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
+import { ActivityIndicator, Alert, Linking, Platform } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Alert, Linking, Platform, ActivityIndicator } from 'react-native'; 
-import { generatePaymentHTML, parseSuccessURL, isSuccessURL, isFailURL } from '@/services/paymentApi';
+
+// API
+import { generatePaymentHTML, isFailURL, isSuccessURL, parseSuccessURL } from '@/services/paymentApi';
 import { confirmChargePayment } from '@/services/walletApi';
 
 // URL이 앱스킴인지 확인하는 함수
