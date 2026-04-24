@@ -52,24 +52,44 @@ export default function HomeScreen() {
   );
 
   useEffect(() => {
-    const user = auth().currentUser;
-    if (!user) return;
+    // 변수 선언: 리턴 함수(cleanup)에서도 볼 수 있게
+    let unsubUser: (() => void) | undefined;
+    let unsubChallenges: (() => void) | undefined;
 
-    const unsubUser = firestore()
+    const user = auth().currentUser;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    // 유저 데이터 구독
+    unsubUser = firestore()
       .collection('users')
       .doc(user.uid)
       .onSnapshot(doc => {
         if (doc?.exists()) setUserData(doc.data());
-      }, err => console.error(err));
+      }, err => console.error("유저 구독 에러:", err));
 
-    const unsubChallenges = subscribeToMyChallenges(user.uid, (list) => {
-      setChallenges(list);
-      setLoading(false);
-    });
+    // 챌린지 목록 구독
+    unsubChallenges = subscribeToMyChallenges(
+      user.uid, 
+      (list) => {
+        setChallenges(list);
+        setLoading(false); // 데이터 로드 성공 시 로딩 해제
+      }
+    );
+
+    // 초대장 불러오기 (실패해도 화면 로딩에 지장 없게 처리)
+    loadInvites().catch(err => console.log("초대장 로딩 무시:", err));
+
+    // [안전장치] 3초 뒤에도 로딩이 안 풀리면 강제로 풀기
+    const timeout = setTimeout(() => setLoading(false), 3000);
 
     return () => { 
-      unsubUser(); 
-      unsubChallenges(); 
+      // ?를 붙여서 정의되었을 때만 실행되게 함
+      unsubUser?.(); 
+      unsubChallenges?.();
+      clearTimeout(timeout);
     };
   }, []);
 
@@ -95,7 +115,7 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F2F4F6' }}>
-      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* 상단 프로필 & 알림 */}
         <View style={styles.topBar}>
           <View>
@@ -157,7 +177,7 @@ export default function HomeScreen() {
 
         {challenges.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>참여 중인 챌린지가 없어요.</Text>
+            <Text style={styles.emptyText}>아직 참여 중인 챌린지가 없어요.</Text>
           </View>
         ) : (
           challenges.map((item) => (
@@ -337,7 +357,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 120,
+    bottom: 130,
     right: 20,
     width: 56,
     height: 56,
