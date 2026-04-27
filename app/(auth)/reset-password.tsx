@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { AuthInput } from '../../components/AuthInput';
-import { PrimaryButton } from '../../components/Buttons';
-import { HeaderWithBack } from '../../components/HeaderWithBack';
+import React, { useState } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
+
+// Components
+import { AuthInput } from '@/components/AuthInput';
+import { PrimaryButton } from '@/components/Buttons';
+import { HeaderWithBack } from '@/components/HeaderWithBack';
+
+// Firebase
 import auth from '@react-native-firebase/auth';
 
 export default function ResetPasswordScreen() {

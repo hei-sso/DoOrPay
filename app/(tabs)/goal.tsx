@@ -1,16 +1,51 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// API
+import { subscribeToMyChallenges } from '@/services/challengeApi';
+import { subscribeToMyGoals } from '@/services/goalApi';
+
+// Firebase
+import auth from '@react-native-firebase/auth';
 
 export default function GoalTabScreen() {
   const router = useRouter();
 
-  // Mock 데이터
-  const myGoals = [
-    { id: 'goal_1', title: '매일 물 2L 마시기', type: 'personal', amount: 5000, emoji: '💧' },
-    { id: 'goal_2', title: '아침 7시 기상 인증', type: 'group', amount: 2500, emoji: '⏰', leaderId: 'leader_uid_123' },
-    { id: 'goal_3', title: '하루 1만보 걷기', type: 'personal', amount: 10000, emoji: '👟' },
-  ];
+  const [personalGoals, setPersonalGoals] = useState<any[]>([]);
+  const [groupChallenges, setGroupChallenges] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const user = auth().currentUser;
+    if (!user) return;
+
+    // 1. 개인 목표 구독
+    const unsubGoals = subscribeToMyGoals(user.uid, (list) => {
+      setPersonalGoals(list);
+    });
+
+    // 2. 그룹 챌린지 구독
+    const unsubChallenges = subscribeToMyChallenges(user.uid, (list) => {
+      setGroupChallenges(list);
+    });
+
+    // 약간의 딜레이 후 로딩 해제 (스켈레톤 UI를 넣으면 더 좋아!)
+    setTimeout(() => setLoading(false), 500);
+
+    return () => {
+      unsubGoals();
+      unsubChallenges();
+    };
+  }, []);
+
+  // 두 배열을 합치고 최신 생성일 기준으로 정렬
+  const combinedGoals = [...personalGoals, ...groupChallenges].sort((a, b) => {
+    const timeA = a.createdAt?.toMillis() || 0;
+    const timeB = b.createdAt?.toMillis() || 0;
+    return timeB - timeA;
+  });
 
   return (
     <View style={styles.container}>
@@ -18,7 +53,7 @@ export default function GoalTabScreen() {
         <Text style={styles.headerTitle}>목표 관리</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 130 }}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120 }}>
         <Text style={styles.sectionTitle}>새로운 도전을 시작해보세요!</Text>
         
         {/* 개인 목표 생성 카드 */}
@@ -42,45 +77,56 @@ export default function GoalTabScreen() {
         </TouchableOpacity>
 
         {/* 진행 중인 목표 리스트 */}
-        <Text style={[styles.sectionTitle, { marginTop: 40 }]}>진행 중인 내 목표</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 40 }]}>진행 중인 목표</Text>
         
-        {myGoals.map((goal) => (
-          <TouchableOpacity 
-            key={goal.id} 
-            style={styles.goalItemCard}
-            onPress={() =>
-              router.push({
-                pathname: goal.type === 'group'
-                  ? '/challenge-detail'
-                  : '/goal-detail',
-                params: { ...goal }
-              })
-            }
-          >
-            <View style={styles.goalEmojiBox}>
-              <Text style={{ fontSize: 20 }}>{goal.emoji}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={styles.titleRow}>
-                {/* 타입 배지 추가 */}
-                <View style={[
-                  styles.typeBadge, 
-                  { backgroundColor: goal.type === 'group' ? '#FFF0F0' : '#E8F3FF' }
-                ]}>
-                  <Text style={[
-                    styles.typeBadgeText, 
-                    { color: goal.type === 'group' ? '#FF5252' : '#3182F6' }
-                  ]}>
-                    {goal.type === 'group' ? '그룹' : '개인'}
-                  </Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#3182F6" style={{ marginTop: 20 }} />
+        ) : combinedGoals.length === 0 ? (
+           <Text style={{ textAlign: 'center', color: '#8B95A1', marginTop: 20 }}>
+             아직 진행 중인 목표가 없어요.
+           </Text>
+        ) : (
+          combinedGoals.map((goal) => {
+            const isGroup = goal.type === 'group';
+            // 표시할 금액 (개인은 stakeAmount, 그룹은 내 개인 stakeAmount가 따로 없으면 totalStake 표시)
+            const displayAmount = goal.stakeAmount || goal.totalStake || 0;
+
+            return (
+              <TouchableOpacity 
+                key={goal.id} 
+                style={styles.goalItemCard}
+                onPress={() =>
+                  router.push({
+                    pathname: isGroup ? '/challenge-detail' : '/goal-detail',
+                    params: { ...goal }
+                  })
+                }
+              >
+                <View style={styles.goalEmojiBox}>
+                  <Text style={{ fontSize: 20 }}>{goal.emoji || (goal.type === 'group' ? '🔥' : '💧')}</Text>
                 </View>
-                <Text style={styles.goalTitle} numberOfLines={1}>{goal.title}</Text>
-              </View>
-              <Text style={styles.goalSub}>{goal.amount.toLocaleString()} 포인트 예치 중</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#D1D6DB" />
-          </TouchableOpacity>
-        ))}
+                <View style={{ flex: 1 }}>
+                  <View style={styles.titleRow}>
+                    <View style={[
+                      styles.typeBadge, 
+                      { backgroundColor: isGroup ? '#FFF0F0' : '#E8F3FF' }
+                    ]}>
+                      <Text style={[
+                        styles.typeBadgeText, 
+                        { color: isGroup ? '#FF5252' : '#3182F6' }
+                      ]}>
+                        {isGroup ? '그룹' : '개인'}
+                      </Text>
+                    </View>
+                    <Text style={styles.goalTitle} numberOfLines={1}>{goal.title}</Text>
+                  </View>
+                  <Text style={styles.goalSub}>{displayAmount.toLocaleString()} 포인트 예치 중</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#D1D6DB" />
+              </TouchableOpacity>
+            )
+          })
+        )}
       </ScrollView>
     </View>
   );
@@ -92,12 +138,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F4F6'
   },
   header: {
-    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
     paddingTop: 60,
-    backgroundColor: '#FFF'
+    paddingBottom: 16,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F4F6'
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1A1F27'
   },

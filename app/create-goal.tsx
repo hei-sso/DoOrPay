@@ -1,12 +1,54 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+
+//API
+import { createPersonalGoal } from '@/services/goalApi';
+
+const EMOJIS = ['💧', '🏃', '📚', '🥦', '🧘', '⏰', '✍️', '🍏', '💪', '🔋'];
 
 export default function CreateGoalScreen() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
+  const [selectedEmoji, setSelectedEmoji] = useState(EMOJIS[0]);
+  const [loading, setLoading] = useState(false);
+
+  // 날짜 상태 관리 (기본값: 오늘 ~ 7일 뒤)
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date(new Date().setDate(new Date().getDate() + 7)));
+
+  // 모달 표시 여부 상태
+  const [isStartPickerVisible, setStartPickerVisibility] = useState(false);
+  const [isEndPickerVisible, setEndPickerVisibility] = useState(false);
+
+  // 날짜 포맷팅 (예: 2026.04.23)
+  const formatDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}.${m}.${d}`;
+  };
+
+  const handleCreate = async () => {
+    if (!title.trim()) return Alert.alert('알림', '목표 이름을 입력해주세요.');
+    const parsedAmount = parseInt(amount, 10);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return Alert.alert('알림', '올바른 금액을 입력해주세요.');
+
+    try {
+      setLoading(true);
+      await createPersonalGoal(title, parsedAmount, selectedEmoji, startDate, endDate);
+      Alert.alert('성공', '개인 목표가 생성되었습니다!', [
+        { text: '확인', onPress: () => router.back() }
+      ]);
+    } catch (error: any) {
+      Alert.alert('목표 생성 실패', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -18,7 +60,20 @@ export default function CreateGoalScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.container} contentContainerStyle={{ padding: 24 }}>
+      <ScrollView style={{ flex: 1, backgroundColor: '#FFF' }} contentContainerStyle={{ padding: 24, paddingBottom: 50 }}>
+        <Text style={styles.label}>아이콘 선택</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiList}>
+          {EMOJIS.map(emoji => (
+            <TouchableOpacity 
+              key={emoji} 
+              onPress={() => setSelectedEmoji(emoji)}
+              style={[styles.emojiItem, selectedEmoji === emoji && styles.selectedEmojiItem]}
+            >
+              <Text style={{ fontSize: 24 }}>{emoji}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
         <Text style={styles.label}>어떤 습관을 만들고 싶나요?</Text>
         <TextInput 
           style={styles.input} 
@@ -41,14 +96,16 @@ export default function CreateGoalScreen() {
 
         <Text style={styles.label}>기간 설정</Text>
         <View style={styles.dateRow}>
-          <TouchableOpacity style={styles.dateBtn}>
-            <Text style={styles.dateText}>오늘부터</Text>
-            <Ionicons name="calendar-outline" size={20} color="#8B95A1" />
+          {/* 시작일 버튼 */}
+          <TouchableOpacity style={styles.dateBtn} onPress={() => setStartPickerVisibility(true)}>
+            <Text style={[styles.dateText, { fontWeight: 'bold', color: '#1A1F27' }]}>{formatDate(startDate)}</Text>
+            <Ionicons name="calendar-outline" size={20} color="#3182F6" />
           </TouchableOpacity>
           <Text style={{ marginHorizontal: 10 }}>~</Text>
-          <TouchableOpacity style={styles.dateBtn}>
-            <Text style={styles.dateText}>1주일 뒤</Text>
-            <Ionicons name="calendar-outline" size={20} color="#8B95A1" />
+          {/* 종료일 버튼 */}
+          <TouchableOpacity style={styles.dateBtn} onPress={() => setEndPickerVisibility(true)}>
+            <Text style={[styles.dateText, { fontWeight: 'bold', color: '#1A1F27' }]}>{formatDate(endDate)}</Text>
+            <Ionicons name="calendar-outline" size={20} color="#FF5252" />
           </TouchableOpacity>
         </View>
         
@@ -58,10 +115,41 @@ export default function CreateGoalScreen() {
       </ScrollView>
 
       <View style={styles.bottomArea}>
-        <TouchableOpacity style={styles.primaryBtn}>
-          <Text style={styles.primaryBtnText}>목표 시작하기</Text>
+        <TouchableOpacity style={styles.primaryBtn} onPress={handleCreate} disabled={loading}>
+          {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>목표 시작하기</Text>}
         </TouchableOpacity>
       </View>
+
+      {/* 시작일 모달 */}
+      <DateTimePickerModal
+        isVisible={isStartPickerVisible}
+        mode="date"
+        date={startDate}
+        onConfirm={(date) => {
+          setStartDate(date);
+          // 시작일이 종료일보다 뒤로 가면 종료일도 자동으로 맞춰줌
+          if (date > endDate) setEndDate(date);
+          setStartPickerVisibility(false);
+        }}
+        onCancel={() => setStartPickerVisibility(false)}
+        confirmTextIOS="확인"
+        cancelTextIOS="취소"
+      />
+
+      {/* 종료일 모달 */}
+      <DateTimePickerModal
+        isVisible={isEndPickerVisible}
+        mode="date"
+        date={endDate}
+        minimumDate={startDate} // 종료일은 시작일 이전으로 선택 못하게 막음
+        onConfirm={(date) => {
+          setEndDate(date);
+          setEndPickerVisibility(false);
+        }}
+        onCancel={() => setEndPickerVisibility(false)}
+        confirmTextIOS="확인"
+        cancelTextIOS="취소"
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -70,7 +158,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFF'
-},
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -164,5 +252,25 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: 'bold',
     fontSize: 18
+  },
+  // 이모지
+  emojiList: {
+    flexDirection: 'row',
+    marginBottom: 20
+  },
+  emojiItem: {
+    width: 54,
+    height: 54,
+    backgroundColor: '#F2F4F6',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: 'transparent'
+  },
+  selectedEmojiItem: {
+    borderColor: '#3182F6',
+    backgroundColor: '#E8F3FF'
   }
 });
