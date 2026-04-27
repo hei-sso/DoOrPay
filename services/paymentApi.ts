@@ -7,10 +7,11 @@ interface PaymentParams {
   amount: string | number;
   orderName: string;
   customerName: string;
+  appScheme: string;
 }
 
 export function generatePaymentHTML(params: PaymentParams): string {
-  const { orderId, amount, orderName, customerName } = params;
+  const { orderId, amount, orderName, customerName, appScheme } = params;
   return `
     <!DOCTYPE html>
     <html>
@@ -28,6 +29,7 @@ export function generatePaymentHTML(params: PaymentParams): string {
             customerName: '${customerName}',
             successUrl: '${SUCCESS_URL}',
             failUrl: '${FAIL_URL}',
+            appScheme: '${appScheme}'
           });
         </script>
       </body>

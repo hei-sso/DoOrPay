@@ -1,32 +1,117 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// API
+import { submitVerification, subscribeToVerifications, uploadImageToStorage } from '@/services/verificationApi';
+
+// Firebase
+import firestore from '@react-native-firebase/firestore';
 
 const { width } = Dimensions.get('window');
 
 export default function GoalDetailScreen() {
   const router = useRouter();
-  const { id, title, type, amount, emoji } = useLocalSearchParams();
+  const { id, title, amount, emoji } = useLocalSearchParams();
 
-  // Mock 데이터
-  const [goalDetail] = useState({
-    startDate: '2026.04.01',
-    endDate: '2026.05.30',
-    totalDays: 30,
-    currentStreak: 12,
-    depositedPoints: Number(amount) || 0,
-    description: "매일 인증샷을 찍어 목표를 달성하세요!",
-    history: [
-      { id: 'h1', date: '04.11', img: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=200' },
-      { id: 'h2', date: '04.10', img: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=200' },
-      { id: 'h3', date: '04.09', img: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200' },
-    ]
-  });
+  // 데이터 상태 관리
+  const [realData, setRealData] = useState<any>(null); // 목표 상세 정보
+  const [history, setHistory] = useState<any[]>([]); // 인증 히스토리
 
-  const handleUploadImage = () => {
-    Alert.alert("인증하기", "갤러리에서 오늘 인증 사진을 선택하시겠습니까?");
+  // UI 상태 관리
+  const [isUploading, setIsUploading] = useState(false);
+
+  // 실제 데이터 및 히스토리 구독
+  useEffect(() => {
+    if (!id) return;
+    
+    // 목표 기본 정보 구독
+    const unsubData = firestore().collection('goals').doc(id as string).onSnapshot(doc => {
+      if (doc.exists()) setRealData(doc.data());
+    });
+
+    // 인증 히스토리 구독
+    const unsubHistory = subscribeToVerifications(id as string, (data) => setHistory(data));
+
+    return () => { unsubData(); unsubHistory(); };
+  }, [id]);
+
+  // 날짜 변환 헬퍼 (Timestamp -> YYYY.MM.DD)
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return '-';
+    const date = timestamp.toDate();
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}.${m}.${d}`;
   };
+
+  // 진행일 계산 헬퍼
+  const calculateDays = (startTs: any, endTs: any) => {
+    if (!startTs || !endTs) return 0;
+    return Math.floor((endTs.toDate() - startTs.toDate()) / (1000 * 60 * 60 * 24)) + 1;
+  };
+
+  // 이미지 업로드 로직 (카메라/갤러리 선택)
+  const handleUploadClick = () => {
+    Alert.alert(
+      "인증 사진 올리기",
+      "사진을 가져올 방식을 선택해주세요.",
+      [
+        { text: "카메라로 촬영", onPress: openCamera },
+        { text: "갤러리에서 선택", onPress: openGallery },
+        { text: "취소", style: "cancel" }
+      ]
+    );
+  };
+
+  const openCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') return Alert.alert("권한 필요", "카메라 접근 권한이 필요합니다.");
+    
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7, // 이미지 용량 최적화
+    });
+    if (!result.canceled) processImage(result.assets[0].uri);
+  };
+
+  const openGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') return Alert.alert("권한 필요", "갤러리 접근 권한이 필요합니다.");
+    
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+    if (!result.canceled) processImage(result.assets[0].uri);
+  };
+
+  // 스토리지 업로드
+  const processImage = async (uri: string) => {
+    try {
+      setIsUploading(true);
+      // 1. Firebase Storage에 사진 업로드
+      const imageUrl = await uploadImageToStorage(uri, id as string);
+      
+      // 2. 백엔드 호출해서 verifications 컬렉션에 기록 남기기
+      await submitVerification(id as string, 'goal', imageUrl);
+      
+      Alert.alert("사진 제출 완료!", "심사 결과를 조금만 기다려주세요! ⏳");
+    } catch (error: any) {
+      Alert.alert("사진 제출 실패", error.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // 화면 표시용 데이터 정리
+  const startDate = realData?.startDate ? formatDate(realData.startDate) : '-';
+  const endDate = realData?.endDate ? formatDate(realData.endDate) : '-';
+  const totalDays = calculateDays(realData?.startDate, realData?.endDate);
+  const currentStreak = history.filter(item => item.status === 'approved').length;
 
   return (
     <View style={styles.container}>
@@ -45,27 +130,25 @@ export default function GoalDetailScreen() {
         {/* 상단 요약 섹션 */}
         <View style={styles.topSection}>
           <View style={styles.emojiCircle}>
-            <Text style={{ fontSize: 40 }}>{emoji || '🎯'}</Text>
+            <Text style={{ fontSize: 40 }}>{realData?.emoji || emoji || '🎯'}</Text>
           </View>
           <View style={[styles.badge, { backgroundColor: '#E8F3FF' }]}>
-            <Text style={[styles.badgeText, { color: '#3182F6' }]}>
-              개인 목표
-            </Text>
+            <Text style={[styles.badgeText, { color: '#3182F6' }]}>개인 목표</Text>
           </View>
-          <Text style={styles.mainTitle}>{title}</Text>
-          <Text style={styles.descriptionText}>{goalDetail.description}</Text>
+          <Text style={styles.mainTitle}>{realData?.title || title}</Text>
+          <Text style={styles.descriptionText}>매일 인증샷을 찍어 목표를 달성하세요!</Text>
         </View>
 
         {/* 대시보드 */}
         <View style={styles.dashboard}>
           <View style={styles.dashItem}>
             <Text style={styles.dashLabel}>예치 포인트</Text>
-            <Text style={styles.dashValue}>{goalDetail.depositedPoints.toLocaleString()} P</Text>
+            <Text style={styles.dashValue}>{(realData?.stakeAmount || Number(amount) || 0).toLocaleString()} P</Text>
           </View>
           <View style={styles.dashDivider} />
           <View style={styles.dashItem}>
             <Text style={styles.dashLabel}>진행 기간</Text>
-            <Text style={styles.dashValue}>{goalDetail.totalDays}일간</Text>
+            <Text style={styles.dashValue}>{totalDays}일간</Text>
           </View>
         </View>
 
@@ -74,19 +157,17 @@ export default function GoalDetailScreen() {
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={20} color="#8B95A1" />
             <Text style={styles.infoLabel}>시작일</Text>
-            <Text style={styles.infoValue}>{goalDetail.startDate}</Text>
+            <Text style={styles.infoValue}>{startDate}</Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="flag-outline" size={20} color="#8B95A1" />
             <Text style={styles.infoLabel}>종료일</Text>
-            <Text style={styles.infoValue}>{goalDetail.endDate}</Text>
+            <Text style={styles.infoValue}>{endDate}</Text>
           </View>
           <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
             <Ionicons name="flame-outline" size={20} color="#FF5252" />
             <Text style={styles.infoLabel}>현재</Text>
-            <Text style={[styles.infoValue, { color: '#FF5252', fontWeight: 'bold' }]}>
-              {goalDetail.currentStreak}일째 연속 성공 중!
-            </Text>
+            <Text style={[styles.infoValue, { color: '#FF5252', fontWeight: 'bold' }]}>총 {currentStreak}회 인증 성공!</Text>
           </View>
         </View>
 
@@ -97,23 +178,44 @@ export default function GoalDetailScreen() {
         </View>
         
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gallery}>
-          {goalDetail.history.map((item) => (
-            <View key={item.id} style={styles.historyItem}>
-              <Image source={{ uri: item.img }} style={styles.historyImg} />
-              <View style={styles.historyDateBadge}>
-                <Text style={styles.historyDateText}>{item.date}</Text>
+          {history.length === 0 ? (
+             <Text style={{color: '#8B95A1', marginTop: 20, marginLeft: 10}}>아직 인증 기록이 없어요.</Text>
+          ) : (
+            history.map((item) => (
+              <View key={item.id} style={styles.historyItem}>
+                <Image 
+                  source={{ uri: item.img }} 
+                  style={[
+                    styles.historyImg,
+                    // 반려되었을 때만 이미지에 빨간 테두리 살짝
+                    item.status === 'rejected' && { borderColor: '#FF5252', borderWidth: 2 } 
+                  ]} 
+                />
+                
+                {/* 이미지 우측 상단 상태 뱃지 */}
+                <View style={styles.statusBadge}>
+                  {item.status === 'approved' && <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />}
+                  {item.status === 'rejected' && <Ionicons name="close-circle" size={20} color="#FF5252" />}
+                  {item.status === 'pending' && <ActivityIndicator size="small" color="#FF9800" />}
+                </View>
+
+                <View style={styles.historyDateBadge}>
+                  <Text style={styles.historyDateText}>{item.date}</Text>
+                </View>
               </View>
-            </View>
-          ))}
-          {/* 사진이 더 많아지면 여기에 추가 */}
+            ))
+          )}
         </ScrollView>
       </ScrollView>
 
       {/* 하단 고정 버튼 */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadImage}>
-          <Ionicons name="camera" size={22} color="#FFF" style={{ marginRight: 8 }} />
-          <Text style={styles.uploadBtnText}>오늘의 인증 사진 올리기</Text>
+        <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadClick} disabled={isUploading}>
+          {isUploading ? <ActivityIndicator color="#FFF" /> : (
+            <><Ionicons name="camera" size={22} color="#FFF" style={{ marginRight: 8 }} />
+              <Text style={styles.uploadBtnText}>오늘의 인증 사진 올리기</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -276,6 +378,19 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 16,
     backgroundColor: '#E5E8EB'
+  },
+  statusBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 2,
+    elevation: 2, 
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   historyDateBadge: {
     position: 'absolute',

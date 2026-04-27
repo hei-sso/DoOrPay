@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { AuthInput } from '../../components/AuthInput';
-import { PrimaryButton, GoogleButton } from '../../components/Buttons';
-import { HeaderWithBack } from '../../components/HeaderWithBack';
-import auth from '@react-native-firebase/auth';
-import { authApi } from '../../services/authApi';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// API
+import { authApi } from '@/services/authApi';
+
+// Components
+import { AuthInput } from '@/components/AuthInput';
+import { GoogleButton, PrimaryButton } from '@/components/Buttons';
+import { HeaderWithBack } from '@/components/HeaderWithBack';
+
+// Firebase
+import auth from '@react-native-firebase/auth';
 
 export default function SignupScreen() {
   const router = useRouter();
