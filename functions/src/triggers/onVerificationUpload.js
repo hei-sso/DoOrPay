@@ -37,11 +37,6 @@ exports.onVerificationUpload = functions
     let verificationData;
 
     try {
-      /**
-       * 1단계:
-       * pending 상태인 문서만 processing으로 변경
-       * 중복 트리거 실행 방지
-       */
       const canProcess = await db.runTransaction(async (transaction) => {
         const verificationDoc = await transaction.get(verificationRef);
 
@@ -90,10 +85,6 @@ exports.onVerificationUpload = functions
         return null;
       }
 
-      /**
-       * 2단계:
-       * AI / 중복 검사 실행
-       */
       const [imageResult, duplicateResult] = await Promise.all([
         verifyImage({
           imageUrl,
@@ -123,11 +114,6 @@ exports.onVerificationUpload = functions
 
       const isApproved = rejectReasons.length === 0;
 
-      /**
-       * 3단계:
-       * processing 상태인 문서만 최종 상태로 변경
-       * 이미 approved/rejected 된 문서 재처리 방지
-       */
       await db.runTransaction(async (transaction) => {
         const latestDoc = await transaction.get(verificationRef);
 
@@ -177,7 +163,10 @@ exports.onVerificationUpload = functions
 
           const latestData = latestDoc.data();
 
-          if (latestData.status === "approved" || latestData.status === "rejected") {
+          if (
+            latestData.status === "approved" ||
+            latestData.status === "rejected"
+          ) {
             return;
           }
 
