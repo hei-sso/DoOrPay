@@ -6,24 +6,19 @@
  *
  *  1단계: pHash 생성          (pHash.js)
  *  2단계: 중복 검사            (hamming distance — 기존 로직 연결)
- *  3단계: 웹 도용 검증         (webDetection.js)  ← 오늘 추가
- *  4단계: GPS 위치 검증        (gpsVerification.js) ← 오늘 추가
- *  5단계: 최종 판정 + Firestore 저장
+ *  3단계: 웹 도용 검증         (webDetection.js)
+ *  4단계: 최종 판정 + Firestore 저장
  */
 
 const admin = require("firebase-admin");
 const { generatePHash, savePHash } = require("./pHash");
 const { detectWebTheft } = require("./webDetection");
-const { verifyGps } = require("./gpsVerification");
 const { updateVerification } = require("./firestore");
-
-const db = admin.firestore();
 
 // ─────────────────────────────────────────────
 // 최종 판정 기준
 // ─────────────────────────────────────────────
-function makeFinalVerdict({ webResult, gpsResult }) {
-  // 도용 의심이면 바로 REJECTED
+function makeFinalVerdict({ webResult }) {
   if (webResult.isStolen) {
     return {
       status: "REJECTED",
@@ -32,16 +27,6 @@ function makeFinalVerdict({ webResult, gpsResult }) {
     };
   }
 
-  // GPS 불일치 (EXIF 있고 범위 초과)
-  if (gpsResult.verdict === "suspicious") {
-    return {
-      status: "REJECTED",
-      reason: "gps_mismatch",
-      confidence: 0,
-    };
-  }
-
-  // 정상
   return {
     status: "APPROVED",
     reason: null,
@@ -54,12 +39,11 @@ function makeFinalVerdict({ webResult, gpsResult }) {
 // ─────────────────────────────────────────────
 /**
  * @param {object} params
- * @param {string} params.docId        - Firestore verification 문서 ID
- * @param {string} params.filePath     - Storage 경로 (예: "challenges/abc/photo.jpg")
- * @param {string} params.imageUri     - gs:// 또는 https:// URI (Vision API용)
- * @param {{ lat: number, lng: number } | null} params.claimedGps - 사용자 입력 GPS
+ * @param {string} params.docId      - Firestore verification 문서 ID
+ * @param {string} params.filePath   - Storage 경로 (예: "challenges/abc/photo.jpg")
+ * @param {string} params.imageUri   - gs:// 또는 https:// URI (Vision API용)
  */
-async function runVerificationPipeline({ docId, filePath, imageUri, claimedGps }) {
+async function runVerificationPipeline({ docId, filePath, imageUri }) {
   console.log(`[pipeline] 시작 docId=${docId}`);
 
   // ── 1단계: pHash 생성 ──────────────────────
@@ -71,7 +55,6 @@ async function runVerificationPipeline({ docId, filePath, imageUri, claimedGps }
   // ── 2단계: 중복 검사 (Hamming distance) ────
   // 기존 프로젝트의 hamming 로직이 있다면 여기서 호출
   // 예: const dupResult = await checkDuplicate(pHash);
-  // 현재는 스킵하고 다음 단계로 진행
   await updateVerification(docId, { status: "processing_web_detection" });
 
   // ── 3단계: 웹 도용 검증 ────────────────────
@@ -87,27 +70,14 @@ async function runVerificationPipeline({ docId, filePath, imageUri, claimedGps }
       matchCount: webResult.matchCount,
       fromCache: webResult.fromCache,
     },
-    status: "processing_gps",
-  });
-
-  // ── 4단계: GPS 검증 ────────────────────────
-  const gpsResult = await verifyGps(filePath, claimedGps);
-  console.log(`[pipeline] 4단계 완료 verdict=${gpsResult.verdict}`);
-
-  await updateVerification(docId, {
-    gpsVerification: {
-      hasExif: gpsResult.hasExif,
-      distanceKm: gpsResult.distanceKm,
-      verdict: gpsResult.verdict,
-    },
     status: "processing_final",
   });
 
-  // ── 5단계: 최종 판정 ───────────────────────
-  const finalVerdict = makeFinalVerdict({ webResult, gpsResult });
+  // ── 4단계: 최종 판정 ───────────────────────
+  const finalVerdict = makeFinalVerdict({ webResult });
 
   await updateVerification(docId, {
-    verdict: finalVerdict.status,       // "APPROVED" | "REJECTED"
+    verdict: finalVerdict.status,
     verdictReason: finalVerdict.reason,
     confidence: finalVerdict.confidence,
     status: "done",
