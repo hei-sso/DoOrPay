@@ -15,9 +15,7 @@ const { generatePHash, savePHash } = require("./pHash");
 const { detectWebTheft } = require("./webDetection");
 const { updateVerification } = require("./firestore");
 
-// ─────────────────────────────────────────────
 // 최종 판정 기준
-// ─────────────────────────────────────────────
 function makeFinalVerdict({ webResult }) {
   if (webResult.isStolen) {
     return {
@@ -34,9 +32,7 @@ function makeFinalVerdict({ webResult }) {
   };
 }
 
-// ─────────────────────────────────────────────
 // 메인 파이프라인
-// ─────────────────────────────────────────────
 /**
  * @param {object} params
  * @param {string} params.docId      - Firestore verification 문서 ID
@@ -46,18 +42,18 @@ function makeFinalVerdict({ webResult }) {
 async function runVerificationPipeline({ docId, filePath, imageUri }) {
   console.log(`[pipeline] 시작 docId=${docId}`);
 
-  // ── 1단계: pHash 생성 ──────────────────────
+  // 1단계: pHash 생성
   await updateVerification(docId, { status: "processing_phash" });
   const pHash = await generatePHash(filePath);
   await savePHash(docId, pHash);
   console.log(`[pipeline] 1단계 완료 pHash=${pHash}`);
 
-  // ── 2단계: 중복 검사 (Hamming distance) ────
+  // 2단계: 중복 검사 (Hamming distance)
   // 기존 프로젝트의 hamming 로직이 있다면 여기서 호출
   // 예: const dupResult = await checkDuplicate(pHash);
   await updateVerification(docId, { status: "processing_web_detection" });
 
-  // ── 3단계: 웹 도용 검증 ────────────────────
+  //3단계: 웹 도용 검증
   const webResult = await detectWebTheft(imageUri, pHash);
   console.log(
     `[pipeline] 3단계 완료 isStolen=${webResult.isStolen} topScore=${webResult.topScore}`
@@ -73,7 +69,7 @@ async function runVerificationPipeline({ docId, filePath, imageUri }) {
     status: "processing_final",
   });
 
-  // ── 4단계: 최종 판정 ───────────────────────
+  //4단계: 최종 판정
   const finalVerdict = makeFinalVerdict({ webResult });
 
   await updateVerification(docId, {
