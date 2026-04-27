@@ -15,10 +15,8 @@ const { runVerificationPipeline } = require("../utils/imageVerificationPipeline"
 
 const db = admin.firestore();
 
-// ─────────────────────────────────────────────
-// 방법 A: Storage 트리거 (자동) — 권장
+// Storage 트리거 (자동)
 // 이미지 업로드되면 자동으로 검증 시작
-// ─────────────────────────────────────────────
 exports.verifyUploadedImage = functions
   .region("asia-northeast3")
   .storage.object()
