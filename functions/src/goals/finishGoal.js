@@ -12,11 +12,15 @@ exports.finishGoal = functions
       const { goalId, result } = req.body;
 
       if (!goalId || !result) {
-        return res.status(400).json({ error: "goalId and result are required" });
+        return res.status(400).json({
+          error: "goalId and result are required",
+        });
       }
 
-      if (!["completed", "failed", "canceled"].includes(result)) {
-        return res.status(400).json({ error: "Invalid result value" });
+      if (!["success", "fail"].includes(result)) {
+        return res.status(400).json({
+          error: "Invalid result value",
+        });
       }
 
       const goalRef = db.collection("goals").doc(goalId);
@@ -27,15 +31,25 @@ exports.finishGoal = functions
         const userDoc = await transaction.get(userRef);
 
         if (!goalDoc.exists) {
-          throw new Error("Goal not found");
+          const error = new Error("Goal not found");
+          error.statusCode = 404;
+          throw error;
         }
 
         if (!userDoc.exists) {
-          throw new Error("User not found");
+          const error = new Error("User not found");
+          error.statusCode = 404;
+          throw error;
         }
 
         const goalData = goalDoc.data();
         const userData = userDoc.data();
+
+        if (goalData.type !== "goal") {
+          const error = new Error("Invalid goal document type");
+          error.statusCode = 400;
+          throw error;
+        }
 
         if (goalData.userId !== uid) {
           const error = new Error("Forbidden");
@@ -43,7 +57,7 @@ exports.finishGoal = functions
           throw error;
         }
 
-        if (goalData.status !== "active" && goalData.status !== "paused") {
+        if (goalData.status !== "ongoing") {
           const error = new Error("Goal is not finishable");
           error.statusCode = 400;
           throw error;
@@ -52,17 +66,17 @@ exports.finishGoal = functions
         const stakeAmount = Number(goalData.stakeAmount || 0);
         const wallet = userData.wallet || { balance: 0, locked: 0 };
 
-        if (result === "completed" || result === "canceled") {
-          if (wallet.locked < stakeAmount) {
-            const error = new Error("Insufficient locked balance");
-            error.statusCode = 400;
-            throw error;
-          }
+        if (Number(wallet.locked || 0) < stakeAmount) {
+          const error = new Error("Insufficient locked balance");
+          error.statusCode = 400;
+          throw error;
+        }
 
+        if (result === "success") {
           transaction.update(userRef, {
             wallet: {
-              balance: wallet.balance + stakeAmount,
-              locked: wallet.locked - stakeAmount,
+              balance: Number(wallet.balance || 0) + stakeAmount,
+              locked: Number(wallet.locked || 0) - stakeAmount,
             },
             updatedAt: new Date(),
           });
@@ -75,23 +89,16 @@ exports.finishGoal = functions
             type: "unlock",
             status: "done",
             goalId,
-            description:
-              result === "completed" ? "목표 성공 포인트 반환" : "목표 취소 포인트 반환",
+            description: "목표 성공 포인트 반환",
             createdAt: new Date(),
           });
         }
 
-        if (result === "failed") {
-          if (wallet.locked < stakeAmount) {
-            const error = new Error("Insufficient locked balance");
-            error.statusCode = 400;
-            throw error;
-          }
-
+        if (result === "fail") {
           transaction.update(userRef, {
             wallet: {
-              balance: wallet.balance,
-              locked: wallet.locked - stakeAmount,
+              balance: Number(wallet.balance || 0),
+              locked: Number(wallet.locked || 0) - stakeAmount,
             },
             updatedAt: new Date(),
           });

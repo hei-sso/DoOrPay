@@ -5,6 +5,7 @@ initializeApp();
 
 // triggers
 const { onUserCreated } = require("./src/triggers/onUserCreated");
+const { onVerificationUpload } = require("./src/triggers/onVerificationUpload");
 
 // users
 const { updateUserProfile } = require("./src/users/updateUserProfile");
@@ -28,6 +29,9 @@ const { walletLock } = require("./src/wallet/walletLock");
 const { walletUnlock } = require("./src/wallet/walletUnlock");
 // const { walletDistribute } = require("./src/wallet/walletDistribute");
 
+// verifications
+const { createVerification } = require("./src/verifications/createVerification");
+
 // health check
 exports.checkHealth = functions.https.onRequest((req, res) => {
   res.status(200).send("OK");
@@ -44,12 +48,11 @@ exports.getWallet = getWallet;
 exports.walletLock = walletLock;
 exports.walletUnlock = walletUnlock;
 exports.updateGoalStatus = updateGoalStatus;
-<<<<<<< HEAD
 exports.createChallenge = createChallenge;
 exports.respondChallengeInvite = respondChallengeInvite;
 exports.inviteChallengeMember = inviteChallengeMember;
 exports.getMyInvitations = getMyInvitations;
+exports.createVerification = createVerification;
+exports.onVerificationUpload = onVerificationUpload;
 
-=======
->>>>>>> main
 // exports.walletDistribute = walletDistribute;

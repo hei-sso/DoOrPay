@@ -9,7 +9,15 @@ exports.createChallenge = functions
   .https.onRequest(async (req, res) => {
     try {
       const uid = await getUidFromRequest(req);
-      const { title, description, stakeAmount, startDate, endDate } = req.body;
+
+      const {
+        title,
+        description,
+        stakeAmount,
+        startDate,
+        endDate,
+        emoji,
+      } = req.body;
 
       const parsedStakeAmount = Number(stakeAmount);
 
@@ -19,21 +27,15 @@ exports.createChallenge = functions
         });
       }
 
-      let parsedStartDate = null;
-      let parsedEndDate = null;
+      const parsedStartDate = startDate ? new Date(startDate) : null;
+      const parsedEndDate = endDate ? new Date(endDate) : null;
 
-      if (startDate) {
-        parsedStartDate = new Date(startDate);
-        if (Number.isNaN(parsedStartDate.getTime())) {
-          return res.status(400).json({ error: "Invalid startDate" });
-        }
+      if (startDate && Number.isNaN(parsedStartDate.getTime())) {
+        return res.status(400).json({ error: "Invalid startDate" });
       }
 
-      if (endDate) {
-        parsedEndDate = new Date(endDate);
-        if (Number.isNaN(parsedEndDate.getTime())) {
-          return res.status(400).json({ error: "Invalid endDate" });
-        }
+      if (endDate && Number.isNaN(parsedEndDate.getTime())) {
+        return res.status(400).json({ error: "Invalid endDate" });
       }
 
       if (parsedStartDate && parsedEndDate && parsedStartDate >= parsedEndDate) {
@@ -42,6 +44,7 @@ exports.createChallenge = functions
 
       const userRef = db.collection("users").doc(uid);
       const challengeRef = db.collection("challenges").doc();
+      const memberRef = challengeRef.collection("members").doc(uid);
       const txRef = db.collection("transactions").doc();
 
       await db.runTransaction(async (transaction) => {
@@ -56,7 +59,7 @@ exports.createChallenge = functions
         const userData = userDoc.data();
         const wallet = userData.wallet || { balance: 0, locked: 0 };
 
-        if (wallet.balance < parsedStakeAmount) {
+        if (Number(wallet.balance || 0) < parsedStakeAmount) {
           const error = new Error("Insufficient balance");
           error.statusCode = 400;
           throw error;
@@ -64,29 +67,34 @@ exports.createChallenge = functions
 
         transaction.update(userRef, {
           wallet: {
-            balance: wallet.balance - parsedStakeAmount,
-            locked: (wallet.locked || 0) + parsedStakeAmount,
+            balance: Number(wallet.balance || 0) - parsedStakeAmount,
+            locked: Number(wallet.locked || 0) + parsedStakeAmount,
           },
           updatedAt: new Date(),
         });
 
         transaction.set(challengeRef, {
           id: challengeRef.id,
+          type: "challenge",
           title: title.trim(),
           description: description ? description.trim() : "",
           creatorId: uid,
-          stakePerUser: parsedStakeAmount,
-          participants: [
-            {
-              userId: uid,
-              joinedAt: new Date(),
-              status: "ACTIVE",
-            },
-          ],
+          status: "recruiting",
           startDate: parsedStartDate,
           endDate: parsedEndDate,
-          status: "RECRUITING",
+          totalStake: parsedStakeAmount,
+          stakeAmount: parsedStakeAmount,
+          memberIds: [uid],
+          emoji: emoji || "🔥",
           createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        transaction.set(memberRef, {
+          userId: uid,
+          role: "owner",
+          status: "active",
+          joinedAt: new Date(),
         });
 
         transaction.set(txRef, {
@@ -104,7 +112,8 @@ exports.createChallenge = functions
       return res.status(200).json({
         message: "Challenge created successfully",
         challengeId: challengeRef.id,
-        stakePerUser: parsedStakeAmount,
+        type: "challenge",
+        stakeAmount: parsedStakeAmount,
       });
     } catch (error) {
       console.error("createChallenge error:", error);
