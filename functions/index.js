@@ -48,5 +48,9 @@ exports.createChallenge = createChallenge;
 exports.respondChallengeInvite = respondChallengeInvite;
 exports.inviteChallengeMember = inviteChallengeMember;
 exports.getMyInvitations = getMyInvitations;
-
 // exports.walletDistribute = walletDistribute;
+
+// image verification(AI)
+const { verifyUploadedImage, verifyImageHttp } = require("./src/triggers/verifyUploadedImage");
+exports.verifyUploadedImage = verifyUploadedImage;
+exports.verifyImageHttp = verifyImageHttp;

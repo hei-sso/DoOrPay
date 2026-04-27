@@ -1,6 +1,6 @@
 const admin = require("firebase-admin");
 const sharp = require("sharp");
-const { updateVerification } = require("./utils/firestore");
+const { updateVerification } = require("./firestore");
 
 async function generatePHash(filePath) {
   const bucket = admin.storage().bucket(process.env.STORAGE_BUCKET); // Storage에 올라간 이미지 경로로 이미지 호출
