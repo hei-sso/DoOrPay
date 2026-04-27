@@ -19,17 +19,14 @@ function getVisionClient() {
   return _visionClient;
 }
 
-// ─────────────────────────────────────────────
 // 설정값
-// ─────────────────────────────────────────────
 const THEFT_THRESHOLD = 0.8;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24시간
 const DAILY_LIMIT = 900;                   // 1000건 무료 중 900건만 사용 (100건 버퍼)
 
-// ─────────────────────────────────────────────
+
 // 일일 카운터 (Firestore)
 // 문서 경로: visionApiUsage / YYYY-MM-DD
-// ─────────────────────────────────────────────
 
 // 오늘 날짜 키 (한국 시간 기준)
 function getTodayKey() {
@@ -63,9 +60,8 @@ async function incrementTodayCount() {
   );
 }
 
-// ─────────────────────────────────────────────
+
 // Vision API 호출
-// ─────────────────────────────────────────────
 async function callVisionWebDetection(imageUri) {
   const client = getVisionClient();
   const [result] = await client.webDetection({
@@ -89,9 +85,8 @@ async function callVisionWebDetection(imageUri) {
   return [...fullMatches, ...partialMatches].sort((a, b) => b.score - a.score);
 }
 
-// ─────────────────────────────────────────────
+
 // 도용 판정
-// ─────────────────────────────────────────────
 function judgeTheft(matches) {
   const stolenMatches = matches.filter((m) => m.score >= THEFT_THRESHOLD);
   return {
@@ -102,9 +97,7 @@ function judgeTheft(matches) {
   };
 }
 
-// ─────────────────────────────────────────────
 // Firestore 캐싱
-// ─────────────────────────────────────────────
 async function getCachedResult(pHash) {
   const doc = await db.collection("imageVerificationCache").doc(pHash).get();
   if (!doc.exists) return null;
@@ -123,9 +116,7 @@ async function setCachedResult(pHash, result) {
   });
 }
 
-// ─────────────────────────────────────────────
 // 메인 함수
-// ─────────────────────────────────────────────
 /**
  * 웹 도용 검증
  * 순서: 캐시 확인 → 일일 한도 확인 → Vision API 호출

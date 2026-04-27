@@ -15,10 +15,8 @@ const { runVerificationPipeline } = require("../utils/imageVerificationPipeline"
 
 const db = admin.firestore();
 
-// ─────────────────────────────────────────────
-// 방법 A: Storage 트리거 (자동) — 권장
+// Storage 트리거 (자동)
 // 이미지 업로드되면 자동으로 검증 시작
-// ─────────────────────────────────────────────
 exports.verifyUploadedImage = functions
   .region("asia-northeast3")
   .storage.object()
@@ -29,23 +27,11 @@ exports.verifyUploadedImage = functions
     if (!filePath || !filePath.startsWith("challenges/")) return;
 
     // 파일 경로에서 challengeId 추출
-    // 경로 예시: challenges/{challengeId}/{fileName}
     const parts = filePath.split("/");
     if (parts.length < 3) return;
     const challengeId = parts[1];
 
     console.log(`[verifyUploadedImage] 트리거 challengeId=${challengeId}`);
-
-    // Firestore에서 challenge 문서 조회 (claimedGps 가져오기)
-    const challengeDoc = await db.collection("challenges").doc(challengeId).get();
-    if (!challengeDoc.exists) {
-      console.warn(`[verifyUploadedImage] challenge 없음 id=${challengeId}`);
-      return;
-    }
-
-    const challengeData = challengeDoc.data();
-    const claimedGps = challengeData.location || null;
-    // challenge 문서에 location: { lat: 37.5, lng: 127.0 } 형태로 저장돼있다고 가정
 
     // Firestore verification 문서 생성
     const verificationRef = db.collection("verifications").doc();
@@ -58,19 +44,17 @@ exports.verifyUploadedImage = functions
     });
 
     const docId = verificationRef.id;
-
-    // gs:// URI 생성 (Vision API용)
     const bucket = object.bucket;
     const imageUri = `gs://${bucket}/${filePath}`;
 
     // 파이프라인 실행
-    await runVerificationPipeline({ docId, filePath, imageUri, claimedGps });
+    await runVerificationPipeline({ docId, filePath, imageUri });
   });
 
 // ─────────────────────────────────────────────
 // 방법 B: HTTP 트리거 (수동 호출 / 테스트용)
 // POST /verifyImageHttp
-// body: { challengeId, filePath, claimedGps: { lat, lng } }
+// body: { challengeId, filePath }
 // ─────────────────────────────────────────────
 exports.verifyImageHttp = functions
   .region("asia-northeast3")
@@ -79,7 +63,7 @@ exports.verifyImageHttp = functions
       return res.status(405).json({ error: "POST only" });
     }
 
-    const { challengeId, filePath, claimedGps } = req.body;
+    const { challengeId, filePath } = req.body;
 
     if (!challengeId || !filePath) {
       return res.status(400).json({ error: "challengeId and filePath required" });
@@ -103,7 +87,6 @@ exports.verifyImageHttp = functions
         docId: verificationRef.id,
         filePath,
         imageUri,
-        claimedGps: claimedGps || null,
       });
 
       return res.status(200).json({
