@@ -29,7 +29,7 @@ const { walletLock } = require("./src/wallet/walletLock");
 const { walletUnlock } = require("./src/wallet/walletUnlock");
 // const { walletDistribute } = require("./src/wallet/walletDistribute");
 
-// verifications
+// verifications (우리가 프론트 규격에 맞춰 개조한 API)
 const { createVerification } = require("./src/verifications/createVerification");
 
 // health check
@@ -54,5 +54,3 @@ exports.inviteChallengeMember = inviteChallengeMember;
 exports.getMyInvitations = getMyInvitations;
 exports.createVerification = createVerification;
 exports.onVerificationUpload = onVerificationUpload;
-
-// exports.walletDistribute = walletDistribute;
