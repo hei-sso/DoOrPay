@@ -1,15 +1,10 @@
-import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-// API
-import { createChargeOrder, subscribeToTransactions, subscribeToWallet } from '@/services/walletApi';
-
-// Components
-import AmountInputModal from '@/components/AmountInputModal';
-
-// Firebase
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import AmountInputModal from '@/components/AmountInputModal';
+import { createChargeOrder, subscribeToWallet, subscribeToTransactions } from '@/services/walletApi';
 
 // Wallet 구조 정의
 interface WalletData {
@@ -104,62 +99,56 @@ export default function WalletScreen() {
   if (loading && !wallet) return <ActivityIndicator style={{ flex: 1 }} color="#3182F6" />;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>내 지갑</Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.walletHeader}>
+        <Text style={styles.walletLabel}>포인트 보유 현황</Text>
+        <Text style={styles.balance}>
+          {wallet?.balance?.toLocaleString() || 0} P
+        </Text>
+
+        <View style={styles.btnRow}>
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={() => { setInputAmount(''); setIsChargeVisible(true); }}
+          >
+            <Text style={styles.primaryBtnText}>충전하기</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryBtn}
+            onPress={() => { setInputAmount(''); setIsWithdrawVisible(true); }}
+          >
+            <Text style={styles.secondaryBtnText}>출금</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <ScrollView style={styles.scrollContainer}>
-        <View style={styles.walletHeader}>
-          <Text style={styles.walletLabel}>포인트 보유 현황</Text>
-          <Text style={styles.balance}>
-            {wallet?.balance?.toLocaleString() || 0} P
-          </Text>
-
-          <View style={styles.btnRow}>
-            <TouchableOpacity
-              style={styles.primaryBtn}
-              onPress={() => { setInputAmount(''); setIsChargeVisible(true); }}
-            >
-              <Text style={styles.primaryBtnText}>충전하기</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.secondaryBtn}
-              onPress={() => { setInputAmount(''); setIsWithdrawVisible(true); }}
-            >
-              <Text style={styles.secondaryBtnText}>출금</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.historySection}>
-          <Text style={styles.historyTitle}>최근 내역</Text>
-          {transactions.length === 0 ? (
-            <Text style={styles.historyEmptyText}>거래 내역이 없습니다...</Text>
-          ) : (
-            transactions.map((tx) => (
-              <View key={tx.id} style={styles.historyItem}>
-                <View>
-                  <Text style={styles.historyName}>
-                    {tx.type === 'deposit' ? '포인트 충전' : 
-                     tx.type === 'withdraw' ? '포인트 출금' :
-                     tx.type === 'stake' ? '목표 예치' : '상금 입금'}
-                  </Text>
-                  <Text style={styles.historyDate}>
-                    {tx.createdAt?.toDate().toLocaleDateString()}
-                  </Text>
-                </View>
-                <Text style={[
-                  styles.historyAmount,
-                  { color: (tx.type === 'deposit' || tx.type === 'reward') ? '#3182F6' : '#F04452' }
-                ]}>
-                  {(tx.type === 'deposit' || tx.type === 'reward') ? '+' : '-'}{tx.amount?.toLocaleString()} P
+      <View style={styles.historySection}>
+        <Text style={styles.historyTitle}>최근 내역</Text>
+        {transactions.length === 0 ? (
+          <Text style={styles.historyEmptyText}>거래 내역이 없습니다...</Text>
+        ) : (
+          transactions.map((tx) => (
+            <View key={tx.id} style={styles.historyItem}>
+              <View>
+                <Text style={styles.historyName}>
+                  {tx.type === 'deposit' ? '포인트 충전' : 
+                   tx.type === 'withdraw' ? '포인트 출금' :
+                   tx.type === 'stake' ? '목표 예치' : '상금 입금'}
+                </Text>
+                <Text style={styles.historyDate}>
+                  {tx.createdAt?.toDate().toLocaleDateString()}
                 </Text>
               </View>
-            ))
-          )}
-        </View>
-      </ScrollView>
+              <Text style={[
+                styles.historyAmount,
+                { color: (tx.type === 'deposit' || tx.type === 'reward') ? '#3182F6' : '#F04452' }
+              ]}>
+                {(tx.type === 'deposit' || tx.type === 'reward') ? '+' : '-'}{tx.amount?.toLocaleString()} P
+              </Text>
+            </View>
+          ))
+        )}
+      </View>
 
       {/* 충전 모달 */}
       <AmountInputModal 
@@ -182,32 +171,14 @@ export default function WalletScreen() {
         amount={inputAmount}
         setAmount={setInputAmount}
       />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F4F6'
-  },
-  header: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F4F6'
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1A1F27'
-  },
-  scrollContainer: {
-    flex: 1,
+    backgroundColor: '#FFF'
   },
   walletHeader: {
     padding: 30,

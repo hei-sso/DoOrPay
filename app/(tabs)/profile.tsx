@@ -1,9 +1,7 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-// Firebase
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 
@@ -61,9 +59,6 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>내 정보</Text>
-      </View>
       <View style={styles.profileHeader}>
         <View style={styles.avatar}>
           {userData?.profileImage ? (
@@ -93,21 +88,6 @@ const styles = StyleSheet.create({
     container: {
     flex: 1,
     backgroundColor: '#FFF'
-    },
-    header: {
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingTop: 60,
-      paddingBottom: 16,
-      backgroundColor: '#FFF',
-      borderBottomWidth: 1,
-      borderBottomColor: '#F2F4F6'
-    },
-    headerTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: '#1A1F27'
     },
     profileHeader: {
     alignItems: 'center',

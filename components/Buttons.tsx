@@ -1,5 +1,5 @@
+import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 // 파란색 버튼
 export const PrimaryButton = ({ title, onPress }: { title: string, onPress: () => void }) => (

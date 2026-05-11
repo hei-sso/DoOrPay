@@ -1,5 +1,6 @@
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore");
 const { getUidFromRequest } = require("../utils/auth");
 
 const db = admin.firestore();
@@ -56,14 +57,17 @@ exports.respondChallengeInvite = functions
           return;
         }
 
-        const challengeRef = db.collection("challenges").doc(invitationData.challengeId);
+        const challengeRef = db
+          .collection("challenges")
+          .doc(invitationData.challengeId);
+
         const userRef = db.collection("users").doc(uid);
+        const memberRef = challengeRef.collection("members").doc(uid);
         const lockTxRef = db.collection("transactions").doc();
 
-        const [challengeDoc, userDoc] = await Promise.all([
-          transaction.get(challengeRef),
-          transaction.get(userRef),
-        ]);
+        const challengeDoc = await transaction.get(challengeRef);
+        const userDoc = await transaction.get(userRef);
+        const memberDoc = await transaction.get(memberRef);
 
         if (!challengeDoc.exists) {
           const error = new Error("Challenge not found");
@@ -77,58 +81,60 @@ exports.respondChallengeInvite = functions
           throw error;
         }
 
-        const challengeData = challengeDoc.data();
-        const userData = userDoc.data();
-
-        if (challengeData.status !== "RECRUITING") {
-          const error = new Error("Challenge is not accepting members");
-          error.statusCode = 400;
-          throw error;
-        }
-
-        const participants = Array.isArray(challengeData.participants)
-          ? challengeData.participants
-          : [];
-
-        const alreadyParticipant = participants.some(
-          (participant) => participant.userId === uid
-        );
-
-        if (alreadyParticipant) {
+        if (memberDoc.exists) {
           const error = new Error("User is already participating");
           error.statusCode = 409;
           throw error;
         }
 
-        const stakePerUser = Number(challengeData.stakePerUser || 0);
+        const challengeData = challengeDoc.data();
+        const userData = userDoc.data();
+
+        if (challengeData.type !== "challenge") {
+          const error = new Error("Invalid challenge document type");
+          error.statusCode = 400;
+          throw error;
+        }
+
+        if (challengeData.status !== "recruiting") {
+          const error = new Error("Challenge is not accepting members");
+          error.statusCode = 400;
+          throw error;
+        }
+
+        const stakeAmount = Number(challengeData.stakeAmount || 0);
         const wallet = userData.wallet || { balance: 0, locked: 0 };
 
-        if (!Number.isInteger(stakePerUser) || stakePerUser <= 0) {
+        if (!Number.isInteger(stakeAmount) || stakeAmount <= 0) {
           const error = new Error("Invalid challenge stake amount");
           error.statusCode = 400;
           throw error;
         }
 
-        if (wallet.balance < stakePerUser) {
+        if (Number(wallet.balance || 0) < stakeAmount) {
           const error = new Error("Insufficient balance");
           error.statusCode = 400;
           throw error;
         }
 
-        const updatedParticipants = [
-          ...participants,
-          {
-            userId: uid,
-            joinedAt: new Date(),
-            status: "ACTIVE",
-          },
-        ];
-
         transaction.update(userRef, {
           wallet: {
-            balance: Number(wallet.balance || 0) - stakePerUser,
-            locked: Number(wallet.locked || 0) + stakePerUser,
+            balance: Number(wallet.balance || 0) - stakeAmount,
+            locked: Number(wallet.locked || 0) + stakeAmount,
           },
+          updatedAt: new Date(),
+        });
+
+        transaction.set(memberRef, {
+          userId: uid,
+          role: "member",
+          status: "active",
+          joinedAt: new Date(),
+        });
+
+        transaction.update(challengeRef, {
+          memberIds: FieldValue.arrayUnion(uid),
+          totalStake: FieldValue.increment(stakeAmount),
           updatedAt: new Date(),
         });
 
@@ -136,16 +142,11 @@ exports.respondChallengeInvite = functions
           txId: lockTxRef.id,
           userId: uid,
           challengeId: challengeRef.id,
-          amount: stakePerUser,
+          amount: stakeAmount,
           type: "challenge_lock",
           status: "done",
           description: "그룹 챌린지 초대 수락 시 참가비 잠금",
           createdAt: new Date(),
-        });
-
-        transaction.update(challengeRef, {
-          participants: updatedParticipants,
-          updatedAt: new Date(),
         });
 
         transaction.update(invitationRef, {

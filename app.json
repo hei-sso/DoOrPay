@@ -44,9 +44,7 @@
             "useFrameworks": "static"
           }
         }
-      ],
-      "./with-android-queries.cjs",
-      "./with-ios-queries.cjs"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
