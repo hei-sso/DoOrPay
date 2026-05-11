@@ -103,7 +103,7 @@ export default function HomeScreen() {
   const handleRespondToInvite = async (invitationId: string, action: 'accepted' | 'rejected') => {
     try {
       await respondToInvite(invitationId, action);
-      Alert.alert(t('tabs.home.alert_title'), action === 'accepted' ? t('tabs.home.invite_accept') : t('tabs.home.invite_reject'));
+      Alert.alert(t('home.alert_title'), action === 'accepted' ? t('home.invite_accept') : t('home.invite_reject'));
       
       // 처리 완료된 초대장을 화면에서 즉시 제거
       setInvites(prev => prev.filter(inv => inv.invitationId !== invitationId));
@@ -113,7 +113,7 @@ export default function HomeScreen() {
         setIsNotiVisible(false);
       }
     } catch (error: any) {
-      Alert.alert(t('tabs.home.alert_error'), error.message || t('tabs.home.invite_fail'));
+      Alert.alert(t('home.alert_error'), error.message || t('home.invite_fail'));
     }
   };
 
@@ -125,8 +125,8 @@ export default function HomeScreen() {
         {/* 상단 프로필 & 알림 */}
         <View style={styles.topBar}>
           <View>
-            <Text style={styles.userTitle}>{userData?.nickname || 'User'}{t('tabs.home.user_suffix')}</Text>
-            <Text style={styles.mainTitle}>{t('tabs.home.main_title')}</Text>
+            <Text style={styles.userTitle}>{userData?.nickname || 'User'}{t('home.user_suffix')}</Text>
+            <Text style={styles.mainTitle}>{t('home.main_title')}</Text>
           </View>
           <TouchableOpacity style={styles.notiBtn} onPress={() => setIsNotiVisible(true)}>
             <Ionicons name="notifications-outline" size={24} color="#1A1F27" />
@@ -160,14 +160,14 @@ export default function HomeScreen() {
               textMonthFontSize: 18,
             }}
             // 달력 헤더 월 포맷 (예: 2026년 4월)
-            monthFormat={t('tabs.home.month_format')}
+            monthFormat={t('home.month_format')}
           />
         </View>
 
         {/* 리스크 보드 카드 */}
         <View style={styles.riskCard}>
           <View style={styles.riskHeader}>
-            <Text style={styles.riskLabel}>{t('tabs.home.deposit_label')}</Text>
+            <Text style={styles.riskLabel}>{t('home.deposit_label')}</Text>
           </View>
           {/* wallet 필드 접근 시 오류 방지 */}
           <Text style={styles.riskAmount}>
@@ -177,13 +177,13 @@ export default function HomeScreen() {
 
         {/* 그룹 챌린지 섹션 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t('tabs.home.group_challenge')}</Text>
-          <TouchableOpacity><Text style={styles.moreText}>{t('tabs.home.view_all')}</Text></TouchableOpacity>
+          <Text style={styles.sectionTitle}>{t('home.group_challenge')}</Text>
+          <TouchableOpacity><Text style={styles.moreText}>{t('home.view_all')}</Text></TouchableOpacity>
         </View>
 
         {challenges.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>{t('tabs.home.empty_challenges')}</Text>
+            <Text style={styles.emptyText}>{t('home.empty_challenges')}</Text>
           </View>
         ) : (
           challenges.map((item) => (
@@ -200,7 +200,7 @@ export default function HomeScreen() {
               </View>
               <View style={{flex: 1}}>
                 <Text style={styles.itemTitle}>{item.title}</Text>
-                <Text style={styles.itemSub}>{t('tabs.home.total_stake', { amount: item.totalStake?.toLocaleString() || 0 })}</Text>
+                <Text style={styles.itemSub}>{t('home.total_stake', { amount: item.totalStake?.toLocaleString() || 0 })}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#D1D6DB" />
             </TouchableOpacity>

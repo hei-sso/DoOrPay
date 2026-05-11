@@ -65,7 +65,7 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('tabs.profile.title')}</Text>
+        <Text style={styles.headerTitle}>{t('profile.title')}</Text>
       </View>
       <View style={styles.profileHeader}>
         <View style={styles.avatar}>
@@ -78,15 +78,15 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={40} color="#DDD" />
           )}
         </View>
-        <Text style={styles.userName}>{userData?.nickname || 'User'}{t('tabs.profile.user_suffix')}</Text>
+        <Text style={styles.userName}>{userData?.nickname || 'User'}{t('profile.user_suffix')}</Text>
         <Text style={styles.userEmail}>{userData?.email || auth().currentUser?.email}</Text>
       </View>
 
       <View style={styles.menuList}>
-        <Menu icon="person-outline" title={t('tabs.profile.edit_profile')} />
-        <Menu icon="trophy-outline" title={t('tabs.profile.success_challenge')} />
-        <Menu icon="settings-outline" title={t('tabs.profile.settings')} onPress={() => router.push('/settings')} />
-        <Menu icon="log-out-outline" title={t('tabs.profile.logout')} color="#FF5252" onPress={() => auth().signOut()} />
+        <Menu icon="person-outline" title={t('profile.edit_profile')} />
+        <Menu icon="trophy-outline" title={t('profile.success_challenge')} />
+        <Menu icon="settings-outline" title={t('profile.settings')} onPress={() => router.push('/settings')} />
+        <Menu icon="log-out-outline" title={t('profile.logout')} color="#FF5252" onPress={() => auth().signOut()} />
       </View>
     </View>
   );

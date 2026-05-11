@@ -25,7 +25,7 @@ export default function SettingsScreen() {
           onPress: () => i18n.changeLanguage('en') 
         },
         { 
-          text: t('tabs.home.alert_title'),
+          text: t('settings.items.cancle'),
           style: 'cancel' 
         },
       ]

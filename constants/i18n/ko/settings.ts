@@ -9,6 +9,7 @@ export const settings = {
     language: "언어 설정",
     terms: "이용약관",
     privacy: "개인정보 처리방침",
-    version: "앱 버전"
+    version: "앱 버전",
+    cancle: "취소"
   }
 };

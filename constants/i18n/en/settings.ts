@@ -9,6 +9,7 @@ export const settings = {
     language: "Language",
     terms: "Terms of Service",
     privacy: "Privacy Policy",
-    version: "App Version"
+    version: "App Version",
+    cancle: "cancle"
   }
 };

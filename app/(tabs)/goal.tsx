@@ -53,18 +53,18 @@ export default function GoalTabScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('tabs.goal.title')}</Text>
+        <Text style={styles.headerTitle}>{t('goal.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120 }}>
-        <Text style={styles.sectionTitle}>{t('tabs.goal.subtitle')}</Text>
+        <Text style={styles.sectionTitle}>{t('goal.subtitle')}</Text>
 
         {/* 개인 목표 생성 카드 */}
         <TouchableOpacity style={styles.createCard} onPress={() => router.push('/create-goal')}>
           <View style={styles.cardIconBox}><Ionicons name="person" size={24} color="#3182F6" /></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>{t('tabs.goal.personal_create')}</Text>
-            <Text style={styles.cardSub}>{t('tabs.goal.personal_sub')}</Text>
+            <Text style={styles.cardTitle}>{t('goal.personal_create')}</Text>
+            <Text style={styles.cardSub}>{t('goal.personal_sub')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={24} color="#D1D6DB" />
         </TouchableOpacity>
@@ -73,20 +73,20 @@ export default function GoalTabScreen() {
         <TouchableOpacity style={styles.createCard} onPress={() => router.push('/create-challenge')}>
           <View style={[styles.cardIconBox, { backgroundColor: '#FFF0F0' }]}><Ionicons name="people" size={24} color="#FF5252" /></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>{t('tabs.goal.group_create')}</Text>
-            <Text style={styles.cardSub}>{t('tabs.goal.group_sub')}</Text>
+            <Text style={styles.cardTitle}>{t('goal.group_create')}</Text>
+            <Text style={styles.cardSub}>{t('goal.group_sub')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={24} color="#D1D6DB" />
         </TouchableOpacity>
 
         {/* 진행 중인 목표 리스트 */}
-        <Text style={[styles.sectionTitle, { marginTop: 40 }]}>{t('tabs.goal.ongoing')}</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 40 }]}>{t('goal.ongoing')}</Text>
 
         {loading ? (
           <ActivityIndicator size="large" color="#3182F6" style={{ marginTop: 20 }} />
         ) : combinedGoals.length === 0 ? (
            <Text style={{ textAlign: 'center', color: '#8B95A1', marginTop: 20 }}>
-             {t('tabs.goal.empty')}
+             {t('goal.empty')}
            </Text>
         ) : (
           combinedGoals.map((goal) => {
@@ -118,12 +118,12 @@ export default function GoalTabScreen() {
                         styles.typeBadgeText, 
                         { color: isGroup ? '#FF5252' : '#3182F6' }
                       ]}>
-                        {isGroup ? t('tabs.goal.type_group') : t('tabs.goal.type_personal')}
+                        {isGroup ? t('goal.type_group') : t('goal.type_personal')}
                       </Text>
                     </View>
                     <Text style={styles.goalTitle} numberOfLines={1}>{goal.title}</Text>
                   </View>
-                  <Text style={styles.goalSub}>{t('tabs.goal.deposit_status', { amount: displayAmount.toLocaleString() })}</Text>
+                  <Text style={styles.goalSub}>{t('goal.deposit_status', { amount: displayAmount.toLocaleString() })}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={24} color="#D1D6DB" />
               </TouchableOpacity>

@@ -18,7 +18,7 @@ export const home = {
   invite_accept: "Invitation accepted!",
   invite_reject: "Invitation rejected.",
   invite_fail: "Failed to process invitation.",
-  month_format: "MMMM yyyy"
+  month_format: "MM yyyy"
 };
 
 export const goal = {

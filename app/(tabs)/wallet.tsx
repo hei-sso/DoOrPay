@@ -60,7 +60,7 @@ export default function WalletScreen() {
   const handleRequestCharge = async () => {
     const amount = parseInt(inputAmount);
     if (isNaN(amount) || amount <= 100) {
-      Alert.alert(t('tabs.home.alert_title'), t('tabs.wallet.alert_min_amount'));
+      Alert.alert(t('home.alert_title'), t('wallet.alert_min_amount'));
       return;
     }
 
@@ -76,11 +76,11 @@ export default function WalletScreen() {
           orderId: result.orderId,
           amount: result.amount,
           orderName: result.orderName,
-          customerName: auth().currentUser?.displayName || t('tabs.wallet.default_user_name'),
+          customerName: auth().currentUser?.displayName || t('wallet.default_user_name'),
         }
       });
     } catch (error: any) {
-      Alert.alert(t('tabs.wallet.alert_fail_charge'), error.message);
+      Alert.alert(t('wallet.alert_fail_charge'), error.message);
     } finally {
       setLoading(false);
       setInputAmount('');
@@ -91,15 +91,15 @@ export default function WalletScreen() {
   const handleRequestWithdraw = () => {
     const amount = parseInt(inputAmount);
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert(t('tabs.home.alert_title'), t('tabs.wallet.alert_wrong_amount'));
+      Alert.alert(t('home.alert_title'), t('wallet.alert_wrong_amount'));
       return;
     }
     if (amount > (wallet?.balance || 0)) {
-      Alert.alert(t('tabs.home.alert_title'), t('tabs.wallet.alert_insufficient'));
+      Alert.alert(t('home.alert_title'), t('wallet.alert_insufficient'));
       return;
     }
 
-    Alert.alert(t('tabs.wallet.withdraw'), t('tabs.wallet.confirm_withdraw', { amount: amount.toLocaleString() }));
+    Alert.alert(t('wallet.withdraw'), t('wallet.confirm_withdraw', { amount: amount.toLocaleString() }));
     setIsWithdrawVisible(false);
     setInputAmount('');
   };
@@ -109,12 +109,12 @@ export default function WalletScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('tabs.wallet.title')}</Text>
+        <Text style={styles.headerTitle}>{t('wallet.title')}</Text>
       </View>
 
       <ScrollView style={styles.scrollContainer}>
         <View style={styles.walletHeader}>
-          <Text style={styles.walletLabel}>{t('tabs.wallet.status')}</Text>
+          <Text style={styles.walletLabel}>{t('wallet.status')}</Text>
           <Text style={styles.balance}>
             {wallet?.balance?.toLocaleString() || 0} P
           </Text>
@@ -124,29 +124,29 @@ export default function WalletScreen() {
               style={styles.primaryBtn}
               onPress={() => { setInputAmount(''); setIsChargeVisible(true); }}
             >
-              <Text style={styles.primaryBtnText}>{t('tabs.wallet.charge')}</Text>
+              <Text style={styles.primaryBtnText}>{t('wallet.charge')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.secondaryBtn}
               onPress={() => { setInputAmount(''); setIsWithdrawVisible(true); }}
             >
-              <Text style={styles.secondaryBtnText}>{t('tabs.wallet.withdraw')}</Text>
+              <Text style={styles.secondaryBtnText}>{t('wallet.withdraw')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.historySection}>
-          <Text style={styles.historyTitle}>{t('tabs.wallet.history')}</Text>
+          <Text style={styles.historyTitle}>{t('wallet.history')}</Text>
           {transactions.length === 0 ? (
-            <Text style={styles.historyEmptyText}>{t('tabs.wallet.empty')}</Text>
+            <Text style={styles.historyEmptyText}>{t('wallet.empty')}</Text>
           ) : (
             transactions.map((tx) => (
               <View key={tx.id} style={styles.historyItem}>
                 <View>
                   <Text style={styles.historyName}>
-                    {tx.type === 'deposit' ? t('tabs.wallet.type_deposit') :
-                     tx.type === 'withdraw' ? t('tabs.wallet.type_withdraw') :
-                     tx.type === 'stake' ? t('tabs.wallet.type_stake') : t('tabs.wallet.type_reward')}
+                    {tx.type === 'deposit' ? t('wallet.type_deposit') :
+                     tx.type === 'withdraw' ? t('wallet.type_withdraw') :
+                     tx.type === 'stake' ? t('wallet.type_stake') : t('wallet.type_reward')}
                   </Text>
                   <Text style={styles.historyDate}>
                     {tx.createdAt?.toDate().toLocaleDateString()}
@@ -169,8 +169,8 @@ export default function WalletScreen() {
         visible={isChargeVisible}
         onClose={() => setIsChargeVisible(false)}
         onSubmit={handleRequestCharge}
-        title={t('tabs.wallet.modal_charge_title')}
-        buttonText={t('tabs.wallet.charge')}
+        title={t('wallet.modal_charge_title')}
+        buttonText={t('wallet.charge')}
         amount={inputAmount}
         setAmount={setInputAmount}
       />
@@ -180,8 +180,8 @@ export default function WalletScreen() {
         visible={isWithdrawVisible}
         onClose={() => setIsWithdrawVisible(false)}
         onSubmit={handleRequestWithdraw}
-        title={t('tabs.wallet.modal_withdraw_title')}
-        buttonText={t('tabs.wallet.withdraw')}
+        title={t('wallet.modal_withdraw_title')}
+        buttonText={t('wallet.withdraw')}
         amount={inputAmount}
         setAmount={setInputAmount}
       />
