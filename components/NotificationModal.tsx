@@ -1,19 +1,17 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface NotificationModalProps {
   visible: boolean;
   onClose: () => void;
   invites: any[];
-  onRespond: (invitationId: string, action: 'accepted' | 'rejected') => void; 
 }
 
 export default function NotificationModal({ 
   visible, 
   onClose, 
-  invites,
-  onRespond
+  invites 
 }: NotificationModalProps) {
   return (
     <Modal visible={visible} transparent animationType="slide">
@@ -27,27 +25,19 @@ export default function NotificationModal({
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
             {invites.length > 0 ? (
-              invites.map((invite) => (
-                <View key={invite.invitationId} style={styles.inviteItem}> 
+              invites.map((invite, index) => (
+                <View key={index} style={styles.inviteItem}>
                   <View style={styles.inviteInfo}>
                     <Text style={styles.inviteText}>
                       <Text style={{fontWeight: 'bold'}}>{invite.fromNickname}</Text>님이 {"\n"}
-                      <Text style={{color: '#3182F6', fontWeight: 'bold'}}>{invite.challengeTitle}</Text>에 초대했습니다.
+                      <Text style={{color: '#3182F6', fontWeight: 'bold'}}>{invite.groupTitle}</Text>에 초대했습니다.
                     </Text>
                   </View>
                   <View style={styles.actionRow}>
-                    <TouchableOpacity 
-                      style={styles.declineBtn}
-                      // 거절 버튼 누르면 'rejected' 전달
-                      onPress={() => onRespond(invite.invitationId, 'rejected')} 
-                    >
+                    <TouchableOpacity style={styles.declineBtn}>
                       <Text style={styles.declineText}>거절</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.acceptBtn}
-                      // 수락 버튼 누르면 'accepted' 전달
-                      onPress={() => onRespond(invite.invitationId, 'accepted')} 
-                    >
+                    <TouchableOpacity style={styles.acceptBtn}>
                       <Text style={styles.acceptText}>수락</Text>
                     </TouchableOpacity>
                   </View>

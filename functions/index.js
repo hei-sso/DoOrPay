@@ -5,6 +5,7 @@ initializeApp();
 
 // triggers
 const { onUserCreated } = require("./src/triggers/onUserCreated");
+const { onVerificationUpload } = require("./src/triggers/onVerificationUpload");
 
 // users
 const { updateUserProfile } = require("./src/users/updateUserProfile");
@@ -28,6 +29,9 @@ const { walletLock } = require("./src/wallet/walletLock");
 const { walletUnlock } = require("./src/wallet/walletUnlock");
 // const { walletDistribute } = require("./src/wallet/walletDistribute");
 
+// verifications (우리가 프론트 규격에 맞춰 개조한 API)
+const { createVerification } = require("./src/verifications/createVerification");
+
 // health check
 exports.checkHealth = functions.https.onRequest((req, res) => {
   res.status(200).send("OK");
@@ -48,9 +52,5 @@ exports.createChallenge = createChallenge;
 exports.respondChallengeInvite = respondChallengeInvite;
 exports.inviteChallengeMember = inviteChallengeMember;
 exports.getMyInvitations = getMyInvitations;
-// exports.walletDistribute = walletDistribute;
-
-// image verification(AI)
-const { verifyUploadedImage, verifyImageHttp } = require("./src/triggers/verifyUploadedImage");
-exports.verifyUploadedImage = verifyUploadedImage;
-exports.verifyImageHttp = verifyImageHttp;
+exports.createVerification = createVerification;
+exports.onVerificationUpload = onVerificationUpload;

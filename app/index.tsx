@@ -1,9 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
-
-// Components
-import { PrimaryButton, SecondaryButton } from '@/components/Buttons';
+import { Ionicons } from '@expo/vector-icons';
+import { PrimaryButton, SecondaryButton } from '../components/Buttons';
 
 export default function LandingScreen() {
   const router = useRouter();

@@ -1,6 +1,6 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, TextInputProps, TouchableOpacity, View } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, TextInputProps } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface AuthInputProps extends TextInputProps {
   secureTextEntry?: boolean;
