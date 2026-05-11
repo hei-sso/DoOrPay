@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 // API
 import { subscribeToVerifications } from '@/services/verificationApi';
@@ -12,6 +14,7 @@ const IMAGE_SIZE = width / COLUMN_COUNT;
 
 export default function VerificationFeedScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { targetId, title } = useLocalSearchParams();
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +53,9 @@ export default function VerificationFeedScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color="#1A1F27" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{title} 기록</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {t('feed.title', { title })}
+        </Text>
         <View style={{ width: 44 }} /> 
       </View>
 
@@ -58,7 +63,7 @@ export default function VerificationFeedScreen() {
         <ActivityIndicator style={{ flex: 1 }} color="#3182F6" />
       ) : history.length === 0 ? (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>아직 인증 기록이 없습니다.</Text>
+          <Text style={styles.emptyText}>{t('feed.empty')}</Text>
         </View>
       ) : (
         <FlatList

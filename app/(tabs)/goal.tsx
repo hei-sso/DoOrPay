@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 // API
 import { subscribeToMyChallenges } from '@/services/challengeApi';
@@ -12,6 +14,7 @@ import auth from '@react-native-firebase/auth';
 
 export default function GoalTabScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [personalGoals, setPersonalGoals] = useState<any[]>([]);
   const [groupChallenges, setGroupChallenges] = useState<any[]>([]);
@@ -31,7 +34,7 @@ export default function GoalTabScreen() {
       setGroupChallenges(list);
     });
 
-    // 약간의 딜레이 후 로딩 해제 (스켈레톤 UI를 넣으면 더 좋아!)
+    // 약간의 딜레이 후 로딩 해제
     setTimeout(() => setLoading(false), 500);
 
     return () => {
@@ -50,18 +53,18 @@ export default function GoalTabScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>목표 관리</Text>
+        <Text style={styles.headerTitle}>{t('tabs.goal.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120 }}>
-        <Text style={styles.sectionTitle}>새로운 도전을 시작해보세요!</Text>
+        <Text style={styles.sectionTitle}>{t('tabs.goal.subtitle')}</Text>
 
         {/* 개인 목표 생성 카드 */}
         <TouchableOpacity style={styles.createCard} onPress={() => router.push('/create-goal')}>
           <View style={styles.cardIconBox}><Ionicons name="person" size={24} color="#3182F6" /></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>개인 목표 만들기</Text>
-            <Text style={styles.cardSub}>나만의 습관을 만들고 포인트를 걸어보세요.</Text>
+            <Text style={styles.cardTitle}>{t('tabs.goal.personal_create')}</Text>
+            <Text style={styles.cardSub}>{t('tabs.goal.personal_sub')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={24} color="#D1D6DB" />
         </TouchableOpacity>
@@ -70,20 +73,20 @@ export default function GoalTabScreen() {
         <TouchableOpacity style={styles.createCard} onPress={() => router.push('/create-challenge')}>
           <View style={[styles.cardIconBox, { backgroundColor: '#FFF0F0' }]}><Ionicons name="people" size={24} color="#FF5252" /></View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>그룹 챌린지 만들기</Text>
-            <Text style={styles.cardSub}>친구들과 함께 상금을 걸고 경쟁하세요.</Text>
+            <Text style={styles.cardTitle}>{t('tabs.goal.group_create')}</Text>
+            <Text style={styles.cardSub}>{t('tabs.goal.group_sub')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={24} color="#D1D6DB" />
         </TouchableOpacity>
 
         {/* 진행 중인 목표 리스트 */}
-        <Text style={[styles.sectionTitle, { marginTop: 40 }]}>진행 중인 목표</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 40 }]}>{t('tabs.goal.ongoing')}</Text>
 
         {loading ? (
           <ActivityIndicator size="large" color="#3182F6" style={{ marginTop: 20 }} />
         ) : combinedGoals.length === 0 ? (
            <Text style={{ textAlign: 'center', color: '#8B95A1', marginTop: 20 }}>
-             아직 진행 중인 목표가 없어요.
+             {t('tabs.goal.empty')}
            </Text>
         ) : (
           combinedGoals.map((goal) => {
@@ -115,12 +118,12 @@ export default function GoalTabScreen() {
                         styles.typeBadgeText, 
                         { color: isGroup ? '#FF5252' : '#3182F6' }
                       ]}>
-                        {isGroup ? '그룹' : '개인'}
+                        {isGroup ? t('tabs.goal.type_group') : t('tabs.goal.type_personal')}
                       </Text>
                     </View>
                     <Text style={styles.goalTitle} numberOfLines={1}>{goal.title}</Text>
                   </View>
-                  <Text style={styles.goalSub}>{displayAmount.toLocaleString()} 포인트 예치 중</Text>
+                  <Text style={styles.goalSub}>{t('tabs.goal.deposit_status', { amount: displayAmount.toLocaleString() })}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={24} color="#D1D6DB" />
               </TouchableOpacity>

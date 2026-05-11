@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 // Firebase
 import auth from '@react-native-firebase/auth';
@@ -20,6 +22,7 @@ interface UserData {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +65,7 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>내 정보</Text>
+        <Text style={styles.headerTitle}>{t('tabs.profile.title')}</Text>
       </View>
       <View style={styles.profileHeader}>
         <View style={styles.avatar}>
@@ -75,15 +78,15 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={40} color="#DDD" />
           )}
         </View>
-        <Text style={styles.userName}>{userData?.nickname || '사용자'} 님</Text>
+        <Text style={styles.userName}>{userData?.nickname || 'User'}{t('tabs.profile.user_suffix')}</Text>
         <Text style={styles.userEmail}>{userData?.email || auth().currentUser?.email}</Text>
       </View>
 
       <View style={styles.menuList}>
-        <Menu icon="person-outline" title="프로필 수정" />
-        <Menu icon="trophy-outline" title="성공한 챌린지" />
-        <Menu icon="settings-outline" title="설정" onPress={() => router.push('/settings')} />
-        <Menu icon="log-out-outline" title="로그아웃" color="#FF5252" onPress={() => auth().signOut()} />
+        <Menu icon="person-outline" title={t('tabs.profile.edit_profile')} />
+        <Menu icon="trophy-outline" title={t('tabs.profile.success_challenge')} />
+        <Menu icon="settings-outline" title={t('tabs.profile.settings')} onPress={() => router.push('/settings')} />
+        <Menu icon="log-out-outline" title={t('tabs.profile.logout')} color="#FF5252" onPress={() => auth().signOut()} />
       </View>
     </View>
   );

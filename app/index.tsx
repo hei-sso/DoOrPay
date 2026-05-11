@@ -1,29 +1,32 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 // Components
 import { PrimaryButton, SecondaryButton } from '@/components/Buttons';
 
 export default function LandingScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <View style={styles.container}>
       <View style={styles.logoBox}>
         {/* 이미지 대신 아이콘 사용 */}
         <Ionicons name="checkmark-circle" size={100} color="#3F51B5" />
-        <Text style={styles.title}>Do Or Pay</Text>
-        <Text style={styles.subtitle}>목표를 달성하거나, 돈을 내거나.</Text>
+        <Text style={styles.title}>{t('auth.landing.title')}</Text>
+        <Text style={styles.subtitle}>{t('auth.landing.subtitle')}</Text>
       </View>
 
       <View style={{ marginBottom: 40 }}>
         <PrimaryButton 
-          title="로그인" 
+          title={t('auth.landing.login')}
           onPress={() => router.push('/(auth)/login')} 
         />
         <SecondaryButton 
-          title="회원가입" 
+          title={t('auth.landing.signup')} 
           onPress={() => router.push('/(auth)/signup')} 
         />
       </View>

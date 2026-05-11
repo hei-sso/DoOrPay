@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 //API
 import { createPersonalGoal } from '@/services/goalApi';
@@ -11,6 +13,7 @@ const EMOJIS = ['💧', '🏃', '📚', '🥦', '🧘', '⏰', '✍️', '🍏',
 
 export default function CreateGoalScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState(EMOJIS[0]);
@@ -33,18 +36,18 @@ export default function CreateGoalScreen() {
   };
 
   const handleCreate = async () => {
-    if (!title.trim()) return Alert.alert('알림', '목표 이름을 입력해주세요.');
+    if (!title.trim()) return Alert.alert(t('tabs.home.alert_title'), t('create.alerts.fill_all'));
     const parsedAmount = parseInt(amount, 10);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return Alert.alert('알림', '올바른 금액을 입력해주세요.');
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return Alert.alert(t('tabs.home.alert_title'), t('create.alerts.invalid_amount'));
 
     try {
       setLoading(true);
       await createPersonalGoal(title, parsedAmount, selectedEmoji, startDate, endDate);
-      Alert.alert('성공', '개인 목표가 생성되었습니다!', [
-        { text: '확인', onPress: () => router.back() }
+      Alert.alert(t('tabs.home.alert_title'), t('create.alerts.success_personal'), [
+        { text: t('tabs.home.alert_title'), onPress: () => router.back() }
       ]);
     } catch (error: any) {
-      Alert.alert('목표 생성 실패', error.message);
+      Alert.alert(t('tabs.home.alert_error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -56,12 +59,12 @@ export default function CreateGoalScreen() {
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
           <Ionicons name="arrow-back" size={24} color="#1A1F27" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>개인 목표 생성</Text>
+        <Text style={styles.headerTitle}>{t('create.personal_title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={{ flex: 1, backgroundColor: '#FFF' }} contentContainerStyle={{ padding: 24, paddingBottom: 50 }}>
-        <Text style={styles.label}>아이콘 선택</Text>
+        <Text style={styles.label}>{t('create.labels.icon')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiList}>
           {EMOJIS.map(emoji => (
             <TouchableOpacity 
@@ -74,27 +77,27 @@ export default function CreateGoalScreen() {
           ))}
         </ScrollView>
 
-        <Text style={styles.label}>어떤 습관을 만들고 싶나요?</Text>
+        <Text style={styles.label}>{t('create.labels.goal_name')}</Text>
         <TextInput 
           style={styles.input} 
-          placeholder="예) 매일 아침 7시 기상하기" 
+          placeholder={t('create.placeholders.personal_goal')} 
           value={title}
           onChangeText={setTitle}
         />
 
-        <Text style={styles.label}>얼마를 걸까요? (실패 시 차감)</Text>
+        <Text style={styles.label}>{t('create.labels.amount_personal')}</Text>
         <View style={styles.amountInputWrapper}>
           <TextInput 
             style={styles.amountInput} 
-            placeholder="0" 
+            placeholder={t('create.placeholders.amount')} 
             keyboardType="number-pad"
             value={amount}
             onChangeText={setAmount}
           />
-          <Text style={styles.currency}>포인트</Text>
+          <Text style={styles.currency}>{t('tabs.wallet.unit', 'P')}</Text>
         </View>
 
-        <Text style={styles.label}>기간 설정</Text>
+        <Text style={styles.label}>{t('create.labels.period')}</Text>
         <View style={styles.dateRow}>
           {/* 시작일 버튼 */}
           <TouchableOpacity style={styles.dateBtn} onPress={() => setStartPickerVisibility(true)}>
@@ -110,13 +113,13 @@ export default function CreateGoalScreen() {
         </View>
 
         <TouchableOpacity style={styles.switchChallengeBtn} onPress={() => router.replace('/create-challenge')}>
-          <Text style={styles.switchChallengeText}>혼자 하기 힘드신가요? 그룹 챌린지 만들기 🔥</Text>
+          <Text style={styles.switchChallengeText}>{t('create.help_text.switch_to_challenge')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
       <View style={styles.bottomArea}>
         <TouchableOpacity style={styles.primaryBtn} onPress={handleCreate} disabled={loading}>
-          {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>목표 시작하기</Text>}
+          {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>{t('create.buttons.start_goal')}</Text>}
         </TouchableOpacity>
       </View>
 
@@ -132,8 +135,8 @@ export default function CreateGoalScreen() {
           setStartPickerVisibility(false);
         }}
         onCancel={() => setStartPickerVisibility(false)}
-        confirmTextIOS="확인"
-        cancelTextIOS="취소"
+        confirmTextIOS={t('tabs.home.alert_title')}
+        cancelTextIOS={t('auth.login.divider')}
       />
 
       {/* 종료일 모달 */}
@@ -147,8 +150,8 @@ export default function CreateGoalScreen() {
           setEndPickerVisibility(false);
         }}
         onCancel={() => setEndPickerVisibility(false)}
-        confirmTextIOS="확인"
-        cancelTextIOS="취소"
+        confirmTextIOS={t('tabs.home.alert_title')}
+        cancelTextIOS={t('auth.login.divider')}
       />
     </KeyboardAvoidingView>
   );
