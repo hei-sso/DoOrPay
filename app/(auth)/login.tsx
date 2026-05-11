@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { AuthInput } from '../../components/AuthInput';
-import { PrimaryButton, GoogleButton } from '../../components/Buttons';
-import { HeaderWithBack } from '../../components/HeaderWithBack';
-import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// Components
+import { AuthInput } from '@/components/AuthInput';
+import { GoogleButton, PrimaryButton } from '@/components/Buttons';
+import { HeaderWithBack } from '@/components/HeaderWithBack';
+
+// Firebase
+import auth from '@react-native-firebase/auth';
 
 export default function LoginScreen() {
   const router = useRouter();

@@ -5,37 +5,65 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // API
+import { subscribeToChallengeMembers } from '@/services/challengeApi';
+import { inviteMember } from '@/services/inviteApi';
 import { submitVerification, subscribeToVerifications, uploadImageToStorage } from '@/services/verificationApi';
 
+// Components
+import InviteMemberModal from '@/components/InviteMemberModal';
+import MembersModal from '@/components/MembersModal';
+
 // Firebase
+import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 
 const { width } = Dimensions.get('window');
 
-export default function GoalDetailScreen() {
+export default function ChallengeDetailScreen() {
   const router = useRouter();
-  const { id, title, amount, emoji } = useLocalSearchParams();
+  const { id, title, amount, emoji, creatorId } = useLocalSearchParams(); 
+
+  // 유저 및 권한 상태
+  const currentUser = auth().currentUser;
+  const currentUid = currentUser?.uid;
+  const isLeader = currentUid === creatorId;
 
   // 데이터 상태 관리
-  const [realData, setRealData] = useState<any>(null); // 목표 상세 정보
+  const [realData, setRealData] = useState<any>(null); // 챌린지 상세 정보
+  const [members, setMembers] = useState<any[]>([]); // 참가자 목록
   const [history, setHistory] = useState<any[]>([]); // 인증 히스토리
 
   // UI 상태 관리
+  const [isInviteVisible, setIsInviteVisible] = useState(false);
+  const [isMembersVisible, setIsMembersVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
+  const [targetUid, setTargetUid] = useState('');
 
   // 실제 데이터 및 히스토리 구독
   useEffect(() => {
     if (!id) return;
-    
-    // 목표 기본 정보 구독
-    const unsubData = firestore().collection('goals').doc(id as string).onSnapshot(doc => {
+
+    // 챌린지 기본 정보 구독
+    const unsubChallenge = firestore().collection('challenges').doc(id as string).onSnapshot(doc => {
       if (doc.exists()) setRealData(doc.data());
     });
 
-    // 인증 히스토리 구독
-    const unsubHistory = subscribeToVerifications(id as string, (data) => setHistory(data));
+    // 참가자 목록 구독
+    const unsubMembers = subscribeToChallengeMembers(id as string, (data) => {
+      setMembers(data);
+    });
 
-    return () => { unsubData(); unsubHistory(); };
+    // 인증 히스토리 구독
+    const unsubHistory = subscribeToVerifications(id as string, (data) => {
+      setHistory(data);
+    });
+
+    return () => {
+      unsubChallenge();
+      unsubMembers();
+      unsubHistory();
+    };
   }, [id]);
 
   // 날짜 변환 헬퍼 (Timestamp -> YYYY.MM.DD)
@@ -54,6 +82,26 @@ export default function GoalDetailScreen() {
     return Math.floor((endTs.toDate() - startTs.toDate()) / (1000 * 60 * 60 * 24)) + 1;
   };
 
+  // 멤버 초대 로직
+  const handleInviteSubmit = async (uid: string) => {
+    if(!uid.trim()) {
+      Alert.alert("알림", "초대할 사용자의 UID를 입력해주세요.");
+      return;
+    }
+    try {
+      setIsInviting(true);
+      // challengeId와 입력받은 상대방 UID를 넘겨줌
+      await inviteMember(id as string, uid);
+      Alert.alert("초대 완료", "성공적으로 그룹 초대장을 보냈습니다.");
+      setIsInviteVisible(false);
+      setTargetUid('');
+    } catch (error: any) {
+      Alert.alert("초대 실패", error.message);
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
   // 이미지 업로드 로직 (카메라/갤러리 선택)
   const handleUploadClick = () => {
     Alert.alert(
@@ -70,35 +118,27 @@ export default function GoalDetailScreen() {
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') return Alert.alert("권한 필요", "카메라 접근 권한이 필요합니다.");
-    
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.7, // 이미지 용량 최적화
-    });
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
     if (!result.canceled) processImage(result.assets[0].uri);
   };
 
   const openGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') return Alert.alert("권한 필요", "갤러리 접근 권한이 필요합니다.");
-    
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.7,
-    });
+    const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
     if (!result.canceled) processImage(result.assets[0].uri);
   };
 
-    // 스토리지 업로드
+  // 스토리지 업로드
   const processImage = async (uri: string) => {
     try {
       setIsUploading(true);
       // 1. Firebase Storage에 사진 업로드
       const imageUrl = await uploadImageToStorage(uri, id as string);
-      
+
       // 2. 백엔드 호출해서 verifications 컬렉션에 기록 남기기
-      await submitVerification(id as string, 'goal', imageUrl);
-      
+      await submitVerification(id as string, 'challenge', imageUrl);
+
       Alert.alert("사진 제출 완료!", "심사 결과를 조금만 기다려주세요! ⏳");
     } catch (error: any) {
       Alert.alert("사진 제출 실패", error.message);
@@ -111,7 +151,6 @@ export default function GoalDetailScreen() {
   const startDate = realData?.startDate ? formatDate(realData.startDate) : '-';
   const endDate = realData?.endDate ? formatDate(realData.endDate) : '-';
   const totalDays = calculateDays(realData?.startDate, realData?.endDate);
-  const currentStreak = history.filter(item => item.status === 'approved').length;
 
   return (
     <View style={styles.container}>
@@ -121,7 +160,7 @@ export default function GoalDetailScreen() {
           <Ionicons name="chevron-back" size={24} color="#1A1F27" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>목표 상세</Text>
-        <TouchableOpacity style={styles.iconBtn}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => setIsMembersVisible(true)}>
           <Ionicons name="ellipsis-horizontal" size={24} color="#1A1F27" />
         </TouchableOpacity>
       </View>
@@ -132,18 +171,36 @@ export default function GoalDetailScreen() {
           <View style={styles.emojiCircle}>
             <Text style={{ fontSize: 40 }}>{realData?.emoji || emoji || '🎯'}</Text>
           </View>
-          <View style={[styles.badge, { backgroundColor: '#E8F3FF' }]}>
-            <Text style={[styles.badgeText, { color: '#3182F6' }]}>개인 목표</Text>
+          <View style={[styles.badge, { backgroundColor: '#FFF0F0' }]}>
+            <Text style={[styles.badgeText, { color: '#FF5252' }]}>그룹 챌린지</Text>
           </View>
           <Text style={styles.mainTitle}>{realData?.title || title}</Text>
-          <Text style={styles.descriptionText}>매일 인증샷을 찍어 목표를 달성하세요!</Text>
+          <Text style={styles.descriptionText}>{realData?.description || "매일 인증샷을 찍어 목표를 달성하세요!"}</Text>
         </View>
+
+        {/* 방장 관리 영역 */}
+        {isLeader && (
+          <>
+            <View style={styles.leaderCard}>
+              <View style={styles.leaderHeader}>
+                <Ionicons name="shield-checkmark" size={18} color="#1B64DA" />
+                <Text style={styles.leaderTitleText}>그룹 관리자 전용</Text>
+              </View>
+              <TouchableOpacity style={styles.inviteBtn} onPress={() => setIsInviteVisible(true)} disabled={isInviting}>
+                {isInviting ? <ActivityIndicator color="#FFF" size="small" /> : (
+                  <><Ionicons name="person-add" size={18} color="#FFF" /><Text style={styles.inviteBtnText}>새 멤버 초대하기</Text></>
+                )}
+              </TouchableOpacity>
+            </View>
+            <View style={styles.divider} />
+          </>
+        )}
 
         {/* 대시보드 */}
         <View style={styles.dashboard}>
           <View style={styles.dashItem}>
-            <Text style={styles.dashLabel}>예치 포인트</Text>
-            <Text style={styles.dashValue}>{(realData?.stakeAmount || Number(amount) || 0).toLocaleString()} P</Text>
+            <Text style={styles.dashLabel}>인당 예치금</Text>
+            <Text style={styles.dashValue}>{(realData?.stakePerUser || Number(amount) || 0).toLocaleString()} P</Text>
           </View>
           <View style={styles.dashDivider} />
           <View style={styles.dashItem}>
@@ -165,18 +222,18 @@ export default function GoalDetailScreen() {
             <Text style={styles.infoValue}>{endDate}</Text>
           </View>
           <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-            <Ionicons name="flame-outline" size={20} color="#FF5252" />
-            <Text style={styles.infoLabel}>현재</Text>
-            <Text style={[styles.infoValue, { color: '#FF5252', fontWeight: 'bold' }]}>총 {currentStreak}회 인증 성공!</Text>
+            <Ionicons name="people-outline" size={20} color="#FF5252" />
+            <Text style={styles.infoLabel}>참여 인원</Text>
+            <Text style={[styles.infoValue, { color: '#FF5252', fontWeight: 'bold' }]}>{members.length}명 진행 중</Text>
           </View>
         </View>
 
         {/* 인증 히스토리 갤러리 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>나의 인증 기록</Text>
+          <Text style={styles.sectionTitle}>그룹 인증 기록</Text>
           <TouchableOpacity><Text style={styles.moreText}>전체보기</Text></TouchableOpacity>
         </View>
-
+        
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gallery}>
           {history.length === 0 ? (
              <Text style={{color: '#8B95A1', marginTop: 20, marginLeft: 10}}>아직 인증 기록이 없어요.</Text>
@@ -207,6 +264,22 @@ export default function GoalDetailScreen() {
           )}
         </ScrollView>
       </ScrollView>
+
+      {/* 참가자 목록 모달 */}
+      <MembersModal 
+        visible={isMembersVisible}
+        onClose={() => setIsMembersVisible(false)}
+        members={members}
+      />
+
+      {/* 초대 모달 */}
+      <InviteMemberModal 
+        visible={isInviteVisible}
+        onClose={() => setIsInviteVisible(false)}
+        onSubmit={handleInviteSubmit}
+        uid={targetUid}
+        setUid={setTargetUid}
+      />
 
       {/* 하단 고정 버튼 */}
       <View style={styles.footer}>
@@ -285,6 +358,45 @@ const styles = StyleSheet.create({
   descriptionText: {
     fontSize: 15,
     color: '#8B95A1'
+  },
+  // 방장 전용 카드
+  leaderCard: {
+    backgroundColor: '#E8F3FF',
+    margin: 20,
+    padding: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#D0E4FF'
+  },
+  leaderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16
+  },
+  leaderTitleText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1B64DA',
+    marginLeft: 6
+  },
+  inviteBtn: {
+    backgroundColor: '#3182F6',
+    flexDirection: 'row',
+    paddingVertical: 14,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  inviteBtnText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    marginLeft: 8
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#c2c2c2',
+    marginHorizontal: 24,
+    marginBottom: 8,
   },
   // 대시보드
   dashboard: { 
@@ -401,6 +513,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold'
   },
+
   // 하단 버튼
   footer: { 
     position: 'absolute', 
