@@ -83,6 +83,7 @@ exports.createGoal = functions
           startDate: start,
           endDate: end,
           status: "ongoing",
+          failCount: 0,
           emoji: emoji || "💧",
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),

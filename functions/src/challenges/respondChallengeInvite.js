@@ -129,6 +129,7 @@ exports.respondChallengeInvite = functions
           userId: uid,
           role: "member",
           status: "active",
+          failCount: 0,
           joinedAt: new Date(),
         });
 
