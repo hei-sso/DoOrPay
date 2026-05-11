@@ -22,9 +22,3 @@ async function getUidFromRequest(req) {
 }
 
 module.exports = { getUidFromRequest };
-
-// async function getUidFromRequest(req) {
-//   return req.headers["x-test-uid"] || "x-test-uid";
-// }
-
-// module.exports = { getUidFromRequest };
