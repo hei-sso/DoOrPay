@@ -231,7 +231,14 @@ export default function ChallengeDetailScreen() {
         {/* 인증 히스토리 갤러리 */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>그룹 인증 기록</Text>
-          <TouchableOpacity><Text style={styles.moreText}>전체보기</Text></TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => router.push({
+              pathname: '/verification-feed',
+              params: { targetId: id, title: realData?.title || title }
+            })}
+          >
+            <Text style={styles.moreText}>전체보기</Text>
+          </TouchableOpacity>
         </View>
         
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gallery}>
