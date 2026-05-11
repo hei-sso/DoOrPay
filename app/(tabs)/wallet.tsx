@@ -141,9 +141,9 @@ export default function WalletScreen() {
               <View key={tx.id} style={styles.historyItem}>
                 <View>
                   <Text style={styles.historyName}>
-                    {tx.type === 'deposit' ? '포인트 충전' : 
+                    {tx.type === 'deposit' ? '포인트 충전' :
                      tx.type === 'withdraw' ? '포인트 출금' :
-                     tx.type === 'stake' ? '목표 예치' : '상금 입금'}
+                     tx.type === 'stake' ? '상금 입금' : '목표 예치'}
                   </Text>
                   <Text style={styles.historyDate}>
                     {tx.createdAt?.toDate().toLocaleDateString()}
