@@ -39,19 +39,19 @@ export default function CreateChallengeScreen() {
   };
 
   const handleCreate = async () => {
-    if (!title.trim() || !description.trim()) return Alert.alert(t('tabs.home.alert_title'), t('create.alerts.fill_all'));
+    if (!title.trim() || !description.trim()) return Alert.alert(t('home.alert_title'), t('create.alerts.fill_all'));
     const parsedAmount = parseInt(amount, 10);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return Alert.alert(t('tabs.home.alert_title'), t('create.alerts.invalid_amount'));
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return Alert.alert(t('home.alert_title'), t('create.alerts.invalid_amount'));
 
     try {
       setLoading(true);
       // API 호출 시 시작일과 종료일 전달
       await createGroupChallenge(title, description, parsedAmount, selectedEmoji, startDate, endDate);
-      Alert.alert(t('tabs.home.alert_title'), t('create.alerts.success_challenge'), [
-        { text: t('tabs.home.alert_title'), onPress: () => router.back() }
+      Alert.alert(t('home.alert_title'), t('create.alerts.success_challenge'), [
+        { text: t('home.alert_title'), onPress: () => router.back() }
       ]);
     } catch (error: any) {
-      Alert.alert(t('tabs.home.alert_error'), error.message);
+      Alert.alert(t('home.alert_error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -143,7 +143,7 @@ export default function CreateChallengeScreen() {
           setStartPickerVisibility(false);
         }}
         onCancel={() => setStartPickerVisibility(false)}
-        confirmTextIOS={t('tabs.home.alert_title')}
+        confirmTextIOS={t('home.alert_title')}
         cancelTextIOS={t('auth.login.divider')}
       />
 
@@ -158,7 +158,7 @@ export default function CreateChallengeScreen() {
           setEndPickerVisibility(false);
         }}
         onCancel={() => setEndPickerVisibility(false)}
-        confirmTextIOS={t('tabs.home.alert_title')}
+        confirmTextIOS={t('home.alert_title')}
         cancelTextIOS={t('auth.login.divider')}
       />
     </View>

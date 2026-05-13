@@ -36,18 +36,18 @@ export default function CreateGoalScreen() {
   };
 
   const handleCreate = async () => {
-    if (!title.trim()) return Alert.alert(t('tabs.home.alert_title'), t('create.alerts.fill_all'));
+    if (!title.trim()) return Alert.alert(t('home.alert_title'), t('create.alerts.fill_all'));
     const parsedAmount = parseInt(amount, 10);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return Alert.alert(t('tabs.home.alert_title'), t('create.alerts.invalid_amount'));
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return Alert.alert(t('home.alert_title'), t('create.alerts.invalid_amount'));
 
     try {
       setLoading(true);
       await createPersonalGoal(title, parsedAmount, selectedEmoji, startDate, endDate);
-      Alert.alert(t('tabs.home.alert_title'), t('create.alerts.success_personal'), [
-        { text: t('tabs.home.alert_title'), onPress: () => router.back() }
+      Alert.alert(t('home.alert_title'), t('create.alerts.success_personal'), [
+        { text: t('home.alert_title'), onPress: () => router.back() }
       ]);
     } catch (error: any) {
-      Alert.alert(t('tabs.home.alert_error'), error.message);
+      Alert.alert(t('home.alert_error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export default function CreateGoalScreen() {
             value={amount}
             onChangeText={setAmount}
           />
-          <Text style={styles.currency}>{t('tabs.wallet.unit', 'P')}</Text>
+          <Text style={styles.currency}>{t('wallet.unit', 'P')}</Text>
         </View>
 
         <Text style={styles.label}>{t('create.labels.period')}</Text>
@@ -135,7 +135,7 @@ export default function CreateGoalScreen() {
           setStartPickerVisibility(false);
         }}
         onCancel={() => setStartPickerVisibility(false)}
-        confirmTextIOS={t('tabs.home.alert_title')}
+        confirmTextIOS={t('home.alert_title')}
         cancelTextIOS={t('auth.login.divider')}
       />
 
@@ -150,7 +150,7 @@ export default function CreateGoalScreen() {
           setEndPickerVisibility(false);
         }}
         onCancel={() => setEndPickerVisibility(false)}
-        confirmTextIOS={t('tabs.home.alert_title')}
+        confirmTextIOS={t('home.alert_title')}
         cancelTextIOS={t('auth.login.divider')}
       />
     </KeyboardAvoidingView>
