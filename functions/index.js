@@ -27,7 +27,10 @@ const { confirmChargePayment } = require("./src/wallet/confirmChargePayment");
 const { getWallet } = require("./src/wallet/getWallet");
 const { walletLock } = require("./src/wallet/walletLock");
 const { walletUnlock } = require("./src/wallet/walletUnlock");
-// const { walletDistribute } = require("./src/wallet/walletDistribute");
+
+// schedulers
+const { dailyGoalCheck } = require("./src/schedulers/dailyGoalCheck");
+const { finishAndDistribute } = require("./src/schedulers/finishAndDistribute");
 
 // verifications (우리가 프론트 규격에 맞춰 개조한 API)
 const { createVerification } = require("./src/verifications/createVerification");
@@ -54,3 +57,5 @@ exports.inviteChallengeMember = inviteChallengeMember;
 exports.getMyInvitations = getMyInvitations;
 exports.createVerification = createVerification;
 exports.onVerificationUpload = onVerificationUpload;
+exports.dailyGoalCheck = dailyGoalCheck;
+exports.finishAndDistribute = finishAndDistribute;

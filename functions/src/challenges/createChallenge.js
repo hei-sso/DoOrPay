@@ -94,6 +94,7 @@ exports.createChallenge = functions
           userId: uid,
           role: "owner",
           status: "active",
+          failCount: 0,
           joinedAt: new Date(),
         });
 
