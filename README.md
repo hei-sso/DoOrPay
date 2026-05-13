@@ -15,6 +15,7 @@ Do Or Pay는 사용자가 습관 목표를 설정하고 포인트를 걸어 인�
 - AI 이미지 분석 (중복/인터넷 이미지 검증)
 - 인증 상태 관리 (PENDING → PROCESSING → APPROVED/REJECTED)
 - 사행성 방지를 위한 정책 적용
+- 다국어 지원
 
 ## 📦 기술 스택
 - **Frontend**: React Native+Expo, TypeScript
