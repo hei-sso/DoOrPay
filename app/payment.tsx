@@ -2,6 +2,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Alert, Linking, Platform } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 // API
 import { generatePaymentHTML, isFailURL, isSuccessURL, parseSuccessURL } from '@/services/paymentApi';
@@ -17,6 +19,7 @@ const isAppScheme = (url: string): boolean => {
 
 export default function PaymentScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { orderId, amount, orderName, customerName } = useLocalSearchParams();
 
   const html = generatePaymentHTML({
@@ -38,13 +41,13 @@ export default function PaymentScreen() {
         });
         router.replace('/wallet');
       } catch (e) {
-        Alert.alert('결제 오류', '결제 확인 중 문제가 발생했습니다.');
+        Alert.alert(t('payment.alerts.error_title'), t('payment.alerts.error_msg'));
         router.back();
       }
     }
 
     if (isFailURL(navState.url)) {
-      Alert.alert('결제 실패', '결제가 중단되거나 실패했습니다.');
+      Alert.alert(t('payment.alerts.fail_title'), t('payment.alerts.fail_msg'));
       router.back();
     }
   };
@@ -75,7 +78,7 @@ export default function PaymentScreen() {
 
           // [iOS] 및 일반 앱 스킴 실행 (안드로이드의 커스텀 스킴 포함)
           Linking.openURL(url).catch(() => {
-            Alert.alert('알림', '결제 앱이 설치되어 있지 않거나 실행할 수 없습니다.');
+            Alert.alert(t('tabs.home.alert_title'), t('payment.alerts.app_error'));
           });
           return false;
         }    

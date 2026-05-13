@@ -2,6 +2,8 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next'
+import '@/constants/i18n';
 
 // API
 import { authApi } from '@/services/authApi';
@@ -16,6 +18,7 @@ import auth from '@react-native-firebase/auth';
 
 export default function SignupScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // 상태 관리
   const [nickname, setNickname] = useState('');
@@ -25,7 +28,7 @@ export default function SignupScreen() {
   const [birth, setBirth] = useState('');
 
   const handleSignup = async () => {
-    if (!email || !password || !nickname) return Alert.alert("알림", "필수 항목을 입력해주세요.");
+    if (!email || !password || !nickname) return Alert.alert(t('auth.login.fail_alert_title'), t('auth.signup.required_alert'));
     try {
       // 1. Firebase Auth 계정 생성
       await auth().createUserWithEmailAndPassword(email, password);
@@ -37,10 +40,10 @@ export default function SignupScreen() {
         birth: birth
       });
 
-      Alert.alert("성공", "회원가입 완료!");
+      Alert.alert(t('auth.login.fail_alert_title'), t('auth.signup.success_msg'));
       router.replace('/(tabs)/home');
     } catch (error: any) {
-      Alert.alert("회원가입 에러", error.message);
+      Alert.alert(t('auth.signup.title'), error.message);
     }
   };
 
@@ -77,49 +80,54 @@ export default function SignupScreen() {
     >
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         {/* 뒤로가기 헤더 */}
-        <HeaderWithBack title="회원가입" />
+        <HeaderWithBack title={t('auth.signup.title')} />
 
         <View style={styles.form}>
           {/* 별명 */}
-          <Text style={styles.label}>별명</Text>
+          <Text style={styles.label}>{t('auth.signup.nickname')}</Text>
           <AuthInput placeholder="doorpay" value={nickname} onChangeText={setNickname} />
 
           {/* 이메일 + 인증 버튼 */}          
-          <Text style={styles.label}>이메일</Text>
+          <Text style={styles.label}>{t('auth.signup.email')}</Text>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <AuthInput placeholder="example@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
             </View>
-            <TouchableOpacity style={styles.verifyBtn} onPress={() => Alert.alert('알림', '인증 기능은 준비중입니다.')}>
-              <Text style={styles.verifyBtnText}>인증</Text>
+            <TouchableOpacity style={styles.verifyBtn} onPress={() => Alert.alert(t('auth.login.fail_alert_title'), t('auth.signup.verify_msg'))}>
+              <Text style={styles.verifyBtnText}>{t('auth.signup.verify')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* 비밀번호 */}
-          <Text style={styles.label}>비밀번호</Text>
+          <Text style={styles.label}>{t('auth.signup.password')}</Text>
           <AuthInput secureTextEntry placeholder="**********" value={password} onChangeText={setPassword} />
 
           {/* 전화번호 */}
-          <Text style={styles.label}>전화번호</Text>
+          <Text style={styles.label}>{t('auth.signup.phone')}</Text>
           <AuthInput placeholder="010-1234-5678" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
 
           {/* 생년월일 */}
-          <Text style={styles.label}>생년월일</Text>
+          <Text style={styles.label}>{t('auth.signup.birth')}</Text>
           <AuthInput placeholder="DD / MM / YYYY" value={birth} onChangeText={setBirth} />
 
           {/* 이용약관 안내 */}
           <View style={styles.termsContainer}>
             <Text style={styles.termsText}>
-              계속 진행하면, <Text style={styles.link}>개인정보 처리방침</Text>과 {'\n'}
-              <Text style={styles.link}>이용약관</Text>에 동의하는 것으로 간주됩니다.
+              {t('auth.signup.terms_1')}
+              <Text style={styles.link}>{t('auth.signup.terms_privacy')}</Text>
+              {t('auth.signup.terms_2')}
+              <Text style={styles.link}>{t('auth.signup.terms_service')}</Text>
+              {t('auth.signup.terms_3')}
             </Text>
           </View>
 
           {/* 회원가입 버튼 */}
-          <PrimaryButton title="회원가입" onPress={handleSignup} />
+          <PrimaryButton title={t('auth.signup.button')} onPress={handleSignup} />
 
           <View style={styles.divider}>
-            <View style={styles.line} /><Text style={styles.dividerText}>또는</Text><View style={styles.line} />
+            <View style={styles.line} />
+            <Text style={styles.dividerText}>{t('auth.login.divider')}</Text>
+            <View style={styles.line} />
           </View>
 
           {/* 구글 회원가입 */}
@@ -127,9 +135,9 @@ export default function SignupScreen() {
 
           {/* 로그인 이동 푸터 */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>이미 계정이 있으신가요? </Text>
+            <Text style={styles.footerText}>{t('auth.signup.footer_text')}</Text>
             <TouchableOpacity onPress={() => router.push('./login')}>
-              <Text style={styles.footerLink}>로그인</Text>
+              <Text style={styles.footerLink}>{t('auth.signup.login_link')}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -3,6 +3,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 // API
 import { subscribeToMyChallenges } from '@/services/challengeApi';
@@ -15,18 +17,9 @@ import NotificationModal from '@/components/NotificationModal';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 
-// 달력 한국어 설정
-LocaleConfig.locales['ko'] = {
-  monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
-  monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
-  dayNames: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
-  dayNamesShort: ['일', '월', '화', '수', '목', '금', '토'],
-  today: '오늘'
-};
-LocaleConfig.defaultLocale = 'ko';
-
 export default function HomeScreen() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
 
   const [userData, setUserData] = useState<any>(null);
   const [challenges, setChallenges] = useState<any[]>([]);
@@ -50,6 +43,12 @@ export default function HomeScreen() {
       console.error("초대장 불러오기 실패:", error);
     }
   };
+
+  // 언어 변경 감지 및 달력 언어 업데이트
+  useEffect(() => {
+    // 사용자가 설정을 통해 언어를 바꾸면(ko <-> en), 달력도 즉시 바뀜
+    LocaleConfig.defaultLocale = i18n.language; 
+  }, [i18n.language]);
 
   // 화면이 포커스될 때마다(다른 화면 갔다가 홈으로 돌아올 때) 초대장 목록 새로고침
   useFocusEffect(
@@ -104,7 +103,7 @@ export default function HomeScreen() {
   const handleRespondToInvite = async (invitationId: string, action: 'accepted' | 'rejected') => {
     try {
       await respondToInvite(invitationId, action);
-      Alert.alert('알림', action === 'accepted' ? '초대를 수락했습니다!' : '초대를 거절했습니다.');
+      Alert.alert(t('home.alert_title'), action === 'accepted' ? t('home.invite_accept') : t('home.invite_reject'));
       
       // 처리 완료된 초대장을 화면에서 즉시 제거
       setInvites(prev => prev.filter(inv => inv.invitationId !== invitationId));
@@ -114,7 +113,7 @@ export default function HomeScreen() {
         setIsNotiVisible(false);
       }
     } catch (error: any) {
-      Alert.alert('오류', error.message || '초대 처리에 실패했습니다.');
+      Alert.alert(t('home.alert_error'), error.message || t('home.invite_fail'));
     }
   };
 
@@ -126,8 +125,8 @@ export default function HomeScreen() {
         {/* 상단 프로필 & 알림 */}
         <View style={styles.topBar}>
           <View>
-            <Text style={styles.userTitle}>{userData?.nickname || '사용자'}님의</Text>
-            <Text style={styles.mainTitle}>오늘의 습관</Text>
+            <Text style={styles.userTitle}>{userData?.nickname || 'User'}{t('home.user_suffix')}</Text>
+            <Text style={styles.mainTitle}>{t('home.main_title')}</Text>
           </View>
           <TouchableOpacity style={styles.notiBtn} onPress={() => setIsNotiVisible(true)}>
             <Ionicons name="notifications-outline" size={24} color="#1A1F27" />
@@ -161,14 +160,14 @@ export default function HomeScreen() {
               textMonthFontSize: 18,
             }}
             // 달력 헤더 월 포맷 (예: 2026년 4월)
-            monthFormat={'yyyy년 MM월'}
+            monthFormat={t('home.month_format')}
           />
         </View>
 
         {/* 리스크 보드 카드 */}
         <View style={styles.riskCard}>
           <View style={styles.riskHeader}>
-            <Text style={styles.riskLabel}>쌓여있는 예치금</Text>
+            <Text style={styles.riskLabel}>{t('home.deposit_label')}</Text>
           </View>
           {/* wallet 필드 접근 시 오류 방지 */}
           <Text style={styles.riskAmount}>
@@ -178,13 +177,13 @@ export default function HomeScreen() {
 
         {/* 그룹 챌린지 섹션 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>그룹 챌린지 🔥</Text>
-          <TouchableOpacity><Text style={styles.moreText}>전체보기</Text></TouchableOpacity>
+          <Text style={styles.sectionTitle}>{t('home.group_challenge')}</Text>
+          <TouchableOpacity><Text style={styles.moreText}>{t('home.view_all')}</Text></TouchableOpacity>
         </View>
 
         {challenges.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>아직 참여 중인 챌린지가 없어요.</Text>
+            <Text style={styles.emptyText}>{t('home.empty_challenges')}</Text>
           </View>
         ) : (
           challenges.map((item) => (
@@ -201,7 +200,7 @@ export default function HomeScreen() {
               </View>
               <View style={{flex: 1}}>
                 <Text style={styles.itemTitle}>{item.title}</Text>
-                <Text style={styles.itemSub}>총 {item.totalStake?.toLocaleString() || 0} 포인트</Text>
+                <Text style={styles.itemSub}>{t('home.total_stake', { amount: item.totalStake?.toLocaleString() || 0 })}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#D1D6DB" />
             </TouchableOpacity>
