@@ -1,9 +1,11 @@
 const functions = require("firebase-functions/v1");
+const { defineString } = require("firebase-functions/params");
+
+const TOSS_SECRET_KEY = defineString("TOSS_SECRET_KEY");
 
 async function confirmTossPayment({ paymentKey, orderId, amount }) {
   const secretKey =
-    process.env.TOSS_SECRET_KEY ||
-    (functions.config().toss && functions.config().toss.secret_key);
+    process.env.TOSS_SECRET_KEY || TOSS_SECRET_KEY.value();
 
   if (!secretKey) {
     throw new Error("TOSS_SECRET_KEY is not configured");

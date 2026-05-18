@@ -78,7 +78,7 @@ export default function PaymentScreen() {
 
           // [iOS] 및 일반 앱 스킴 실행 (안드로이드의 커스텀 스킴 포함)
           Linking.openURL(url).catch(() => {
-            Alert.alert(t('tabs.home.alert_title'), t('payment.alerts.app_error'));
+            Alert.alert(t('home.alert_title'), t('payment.alerts.app_error'));
           });
           return false;
         }    

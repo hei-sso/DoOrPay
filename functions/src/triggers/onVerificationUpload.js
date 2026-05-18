@@ -3,11 +3,8 @@
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const { runVerificationPipeline } = require("../utils/imageVerificationPipeline");
-<<<<<<< HEAD
 const { sendVerificationNotification } = require("../utils/fcmService");
 const { validateObjectMetadata, isHeicFile, convertHeicToJpeg } = require("../utils/imageValidator");
-=======
->>>>>>> 818171d8f34cdef947aaed621b2fad09ebddb085
 
 const db = admin.firestore();
 
@@ -31,7 +28,6 @@ exports.onVerificationUpload = functions
         updatedAt: new Date(),
       });
 
-<<<<<<< HEAD
       const bucketName = admin.storage().bucket().name;
       let filePath = data.storagePath;
 
@@ -76,31 +72,11 @@ exports.onVerificationUpload = functions
       const isApproved = finalStatus === "approved";
       const failReasons = finalVerdict?.failReasons ?? [];
       const rejectReason = isApproved ? null : (failReasons[0] || "AI Pipeline rejected");
-=======
-      // 3. 버킷 이름 가져와서 AI(Vision API)가 읽을 수 있는 gs:// 링크 만들기
-      const bucketName = admin.storage().bucket().name;
-      const imageUri = `gs://${bucketName}/${data.storagePath}`;
-
-      // 4. AI 파이프라인 엔진 가동!
-      const finalVerdict = await runVerificationPipeline({
-        docId: verificationId,
-        filePath: data.storagePath,
-        imageUri: imageUri
-      });
-
-      // 5. AI 결과를 파싱해서 DB에 최종 업데이트
-      const finalStatus = (finalVerdict?.status || "REJECTED").toLowerCase();
-      const isApproved = finalStatus === "approved";
-      const rejectReason = isApproved ? null : (finalVerdict?.reason || "AI Pipeline rejected");
->>>>>>> 818171d8f34cdef947aaed621b2fad09ebddb085
 
       await verificationRef.update({
         status: finalStatus,
         rejectReason: rejectReason,
-<<<<<<< HEAD
         failReasons: failReasons,
-=======
->>>>>>> 818171d8f34cdef947aaed621b2fad09ebddb085
         aiConfidence: Number(finalVerdict?.confidence ?? 0),
         approvedAt: isApproved ? new Date() : null,
         rejectedAt: isApproved ? null : new Date(),
@@ -108,14 +84,11 @@ exports.onVerificationUpload = functions
         updatedAt: new Date(),
       });
 
-<<<<<<< HEAD
       // 7. FCM 푸시 알림 전송
       if (data.userId) {
         await sendVerificationNotification(data.userId, finalStatus, failReasons);
       }
 
-=======
->>>>>>> 818171d8f34cdef947aaed621b2fad09ebddb085
       console.log(`[onVerificationUpload] 인증 완료: ${verificationId} -> ${finalStatus}`);
       return null;
 
