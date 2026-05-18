@@ -1,8 +1,12 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 export default function TabLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs screenOptions={{
       tabBarActiveTintColor: '#3182F6',
@@ -33,7 +37,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: '홈',
+          title: t('names.home'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
           ),
@@ -42,7 +46,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="goal"
         options={{
-          title: '목표',
+          title: t('names.goal'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "flag" : "flag-outline"} size={24} color={color} />
           ),
@@ -51,7 +55,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="wallet"
         options={{
-          title: '지갑',
+          title: t('names.wallet'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "wallet" : "wallet-outline"} size={24} color={color} />
           ),
@@ -60,7 +64,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: '내 정보',
+          title: t('names.profile'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
           ),

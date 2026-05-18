@@ -10,7 +10,14 @@ exports.createGoal = functions
   .https.onRequest(async (req, res) => {
     try {
       const uid = await getUidFromRequest(req);
-      const { title, description, stakeAmount, startDate, endDate } = req.body;
+
+      const {
+        title,
+        stakeAmount,
+        startDate,
+        endDate,
+        emoji,
+      } = req.body;
 
       const parsedStakeAmount = Number(stakeAmount);
       const start = new Date(startDate);
@@ -23,7 +30,9 @@ exports.createGoal = functions
         !startDate ||
         !endDate
       ) {
-        return res.status(400).json({ error: "Missing or invalid required fields" });
+        return res.status(400).json({
+          error: "Missing or invalid required fields",
+        });
       }
 
       if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
@@ -50,7 +59,7 @@ exports.createGoal = functions
         const userData = userDoc.data();
         const wallet = userData.wallet || { balance: 0, locked: 0 };
 
-        if (wallet.balance < parsedStakeAmount) {
+        if (Number(wallet.balance || 0) < parsedStakeAmount) {
           const error = new Error("Insufficient balance");
           error.statusCode = 400;
           throw error;
@@ -58,21 +67,24 @@ exports.createGoal = functions
 
         transaction.update(userRef, {
           wallet: {
-            balance: wallet.balance - parsedStakeAmount,
-            locked: (wallet.locked || 0) + parsedStakeAmount,
+            balance: Number(wallet.balance || 0) - parsedStakeAmount,
+            locked: Number(wallet.locked || 0) + parsedStakeAmount,
           },
           updatedAt: new Date(),
         });
 
         transaction.set(goalRef, {
           goalId: goalRef.id,
+          type: "goal",
           userId: uid,
-          title,
-          description: description || "",
+          userNickname: userData.nickname || "",
+          title: title.trim(),
           stakeAmount: parsedStakeAmount,
-          status: "active",
-          startDate,
-          endDate,
+          startDate: start,
+          endDate: end,
+          status: "ongoing",
+          failCount: 0,
+          emoji: emoji || "💧",
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),
         });
@@ -92,6 +104,7 @@ exports.createGoal = functions
       return res.status(200).json({
         message: "Goal created and stake locked",
         goalId: goalRef.id,
+        type: "goal",
         stakeAmount: parsedStakeAmount,
       });
     } catch (error) {

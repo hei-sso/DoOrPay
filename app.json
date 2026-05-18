@@ -46,7 +46,8 @@
         }
       ],
       "./with-android-queries.cjs",
-      "./with-ios-queries.cjs"
+      "./with-ios-queries.cjs",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

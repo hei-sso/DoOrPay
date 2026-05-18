@@ -1,6 +1,8 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 // Components
 import { AuthInput } from '@/components/AuthInput';
@@ -12,36 +14,35 @@ import auth from '@react-native-firebase/auth';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
 
   const handlePasswordReset = async () => {
-    if (!email) return Alert.alert("알림", "이메일을 입력해주세요.");
+    if (!email) return Alert.alert(t('auth.login.fail_alert_title'), t('auth.reset.email_required'));
     try {
       await auth().sendPasswordResetEmail(email);
-      Alert.alert("성공", "비밀번호 재설정 이메일이 발송되었습니다.");
+      Alert.alert(t('auth.login.fail_alert_title'), t('auth.reset.success_msg'));
       router.back();
     } catch (error: any) {
-      Alert.alert("에러", error.message);
+      Alert.alert(t('auth.login.fail_alert_title'), error.message);
     }
   };
 
   return (
     <View style={styles.container}>
-      <HeaderWithBack title="비밀번호 재설정" />
+      <HeaderWithBack title={t('auth.reset.title')} />
       <View style={styles.content}>
-        <Text style={styles.label}>이메일</Text>
+       <Text style={styles.label}>{t('auth.login.email_label')}</Text>
         <AuthInput 
           placeholder="example@example.com" 
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
         />
-        <Text style={styles.infoText}>
-          가입하신 이메일을 입력하시면 비밀번호 재설정 링크를 보내드립니다.
-        </Text>
+        <Text style={styles.infoText}>{t('auth.reset.info')}</Text>
 
         <View style={{ marginTop: 20 }}>
-          <PrimaryButton title="재설정 메일 보내기" onPress={handlePasswordReset} />
+          <PrimaryButton title={t('auth.reset.button')} onPress={handlePasswordReset} />
         </View>
       </View>
     </View>

@@ -4,7 +4,7 @@ const { getUidFromRequest } = require("../utils/auth");
 
 const db = admin.firestore();
 
-const ALLOWED_STATUS = ["active", "paused"];
+const ALLOWED_STATUS = ["ongoing", "success", "fail"];
 
 exports.updateGoalStatus = functions
   .region("asia-northeast3")
@@ -14,11 +14,15 @@ exports.updateGoalStatus = functions
       const { goalId, status } = req.body;
 
       if (!goalId || !status) {
-        return res.status(400).json({ error: "goalId and status are required" });
+        return res.status(400).json({
+          error: "goalId and status are required",
+        });
       }
 
       if (!ALLOWED_STATUS.includes(status)) {
-        return res.status(400).json({ error: "Invalid status value" });
+        return res.status(400).json({
+          error: "Invalid status value",
+        });
       }
 
       const goalRef = db.collection("goals").doc(goalId);
@@ -29,6 +33,10 @@ exports.updateGoalStatus = functions
       }
 
       const goalData = goalDoc.data();
+
+      if (goalData.type !== "goal") {
+        return res.status(400).json({ error: "Invalid goal document type" });
+      }
 
       if (goalData.userId !== uid) {
         return res.status(403).json({ error: "Forbidden" });

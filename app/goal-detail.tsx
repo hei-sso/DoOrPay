@@ -3,6 +3,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 // API
 import { submitVerification, subscribeToVerifications, uploadImageToStorage } from '@/services/verificationApi';
@@ -14,6 +16,7 @@ const { width } = Dimensions.get('window');
 
 export default function GoalDetailScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id, title, amount, emoji } = useLocalSearchParams();
 
   // 데이터 상태 관리
@@ -57,19 +60,19 @@ export default function GoalDetailScreen() {
   // 이미지 업로드 로직 (카메라/갤러리 선택)
   const handleUploadClick = () => {
     Alert.alert(
-      "인증 사진 올리기",
-      "사진을 가져올 방식을 선택해주세요.",
+      t('detail.upload.action_title'),
+      t('detail.upload.action_desc'),
       [
-        { text: "카메라로 촬영", onPress: openCamera },
-        { text: "갤러리에서 선택", onPress: openGallery },
-        { text: "취소", style: "cancel" }
+        { text: t('detail.upload.camera'), onPress: openCamera },
+        { text: t('detail.upload.gallery'), onPress: openGallery },
+        { text: t('auth.login.divider'), style: "cancel" }
       ]
     );
   };
 
   const openCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') return Alert.alert("권한 필요", "카메라 접근 권한이 필요합니다.");
+    if (status !== 'granted') return Alert.alert(t('detail.upload.permission_title'), t('detail.upload.permission_msg'));
     
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -80,7 +83,7 @@ export default function GoalDetailScreen() {
 
   const openGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') return Alert.alert("권한 필요", "갤러리 접근 권한이 필요합니다.");
+    if (status !== 'granted') return Alert.alert(t('detail.upload.permission_title'), t('detail.upload.permission_msg'));
     
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -89,7 +92,7 @@ export default function GoalDetailScreen() {
     if (!result.canceled) processImage(result.assets[0].uri);
   };
 
-  // 스토리지 업로드
+    // 스토리지 업로드
   const processImage = async (uri: string) => {
     try {
       setIsUploading(true);
@@ -99,9 +102,9 @@ export default function GoalDetailScreen() {
       // 2. 백엔드 호출해서 verifications 컬렉션에 기록 남기기
       await submitVerification(id as string, 'goal', imageUrl);
       
-      Alert.alert("사진 제출 완료!", "심사 결과를 조금만 기다려주세요! ⏳");
+      Alert.alert(t('tabs.home.alert_title'), t('detail.upload.success_msg'));
     } catch (error: any) {
-      Alert.alert("사진 제출 실패", error.message);
+      Alert.alert(t('detail.upload.fail_msg'), error.message);
     } finally {
       setIsUploading(false);
     }
@@ -120,7 +123,7 @@ export default function GoalDetailScreen() {
         <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="#1A1F27" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>목표 상세</Text>
+        <Text style={styles.headerTitle}>{t('detail.title')}</Text>
         <TouchableOpacity style={styles.iconBtn}>
           <Ionicons name="ellipsis-horizontal" size={24} color="#1A1F27" />
         </TouchableOpacity>
@@ -133,22 +136,22 @@ export default function GoalDetailScreen() {
             <Text style={{ fontSize: 40 }}>{realData?.emoji || emoji || '🎯'}</Text>
           </View>
           <View style={[styles.badge, { backgroundColor: '#E8F3FF' }]}>
-            <Text style={[styles.badgeText, { color: '#3182F6' }]}>개인 목표</Text>
+            <Text style={[styles.badgeText, { color: '#3182F6' }]}>{t('detail.types.personal')}</Text>
           </View>
           <Text style={styles.mainTitle}>{realData?.title || title}</Text>
-          <Text style={styles.descriptionText}>매일 인증샷을 찍어 목표를 달성하세요!</Text>
+          <Text style={styles.descriptionText}>{t('create.placeholders.description')}</Text>
         </View>
 
         {/* 대시보드 */}
         <View style={styles.dashboard}>
           <View style={styles.dashItem}>
-            <Text style={styles.dashLabel}>예치 포인트</Text>
+            <Text style={styles.dashLabel}>{t('detail.dashboard.stake_personal')}</Text>
             <Text style={styles.dashValue}>{(realData?.stakeAmount || Number(amount) || 0).toLocaleString()} P</Text>
           </View>
           <View style={styles.dashDivider} />
           <View style={styles.dashItem}>
-            <Text style={styles.dashLabel}>진행 기간</Text>
-            <Text style={styles.dashValue}>{totalDays}일간</Text>
+            <Text style={styles.dashLabel}>{t('detail.dashboard.period')}</Text>
+            <Text style={styles.dashValue}>{t('detail.dashboard.days_unit', { days: totalDays })}</Text>
           </View>
         </View>
 
@@ -156,30 +159,37 @@ export default function GoalDetailScreen() {
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={20} color="#8B95A1" />
-            <Text style={styles.infoLabel}>시작일</Text>
+            <Text style={styles.infoLabel}>{t('detail.info.start')}</Text>
             <Text style={styles.infoValue}>{startDate}</Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="flag-outline" size={20} color="#8B95A1" />
-            <Text style={styles.infoLabel}>종료일</Text>
+            <Text style={styles.infoLabel}>{t('detail.info.end')}</Text>
             <Text style={styles.infoValue}>{endDate}</Text>
           </View>
           <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
             <Ionicons name="flame-outline" size={20} color="#FF5252" />
-            <Text style={styles.infoLabel}>현재</Text>
-            <Text style={[styles.infoValue, { color: '#FF5252', fontWeight: 'bold' }]}>총 {currentStreak}회 인증 성공!</Text>
+            <Text style={styles.infoLabel}>{t('detail.info.status_personal')}</Text>
+            <Text style={[styles.infoValue, { color: '#FF5252', fontWeight: 'bold' }]}>{t('detail.info.success_count', { count: currentStreak })}</Text>
           </View>
         </View>
 
         {/* 인증 히스토리 갤러리 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>나의 인증 기록</Text>
-          <TouchableOpacity><Text style={styles.moreText}>전체보기</Text></TouchableOpacity>
+          <Text style={styles.sectionTitle}>{t('detail.history.my_record')}</Text>
+          <TouchableOpacity 
+            onPress={() => router.push({
+              pathname: '/verification-feed',
+              params: { targetId: id, title: realData?.title || title }
+            })}
+          >
+            <Text style={styles.moreText}>{t('detail.history.view_all')}</Text>
+          </TouchableOpacity>
         </View>
-        
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gallery}>
           {history.length === 0 ? (
-             <Text style={{color: '#8B95A1', marginTop: 20, marginLeft: 10}}>아직 인증 기록이 없어요.</Text>
+             <Text style={{color: '#8B95A1', marginTop: 20, marginLeft: 10}}>{t('detail.history.empty')}</Text>
           ) : (
             history.map((item) => (
               <View key={item.id} style={styles.historyItem}>
@@ -213,7 +223,7 @@ export default function GoalDetailScreen() {
         <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadClick} disabled={isUploading}>
           {isUploading ? <ActivityIndicator color="#FFF" /> : (
             <><Ionicons name="camera" size={22} color="#FFF" style={{ marginRight: 8 }} />
-              <Text style={styles.uploadBtnText}>오늘의 인증 사진 올리기</Text>
+              <Text style={styles.uploadBtnText}>{t('detail.upload.action_title')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -250,7 +260,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 160
   },
-  
   // 상단 요약
   topSection: {
     alignItems: 'center',
@@ -287,7 +296,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#8B95A1'
   },
-
   // 대시보드
   dashboard: { 
     flexDirection: 'row', 
@@ -320,7 +328,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F4F6',
     marginHorizontal: 10
   },
-
   // 상세 정보 카드
   infoCard: {
     backgroundColor: '#FFF',
@@ -346,7 +353,6 @@ const styles = StyleSheet.create({
     color: '#1A1F27',
     fontWeight: '500'
   },
-
   // 갤러리 섹션 스타일
   sectionHeader: {
     flexDirection: 'row',
@@ -405,7 +411,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold'
   },
-
   // 하단 버튼
   footer: { 
     position: 'absolute', 

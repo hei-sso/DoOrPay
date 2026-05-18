@@ -1,6 +1,8 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 // API
 import { createChargeOrder, subscribeToTransactions, subscribeToWallet } from '@/services/walletApi';
@@ -29,6 +31,7 @@ interface Transaction {
 
 export default function WalletScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // 상태 관리
   const [wallet, setWallet] = useState<WalletData | null>(null);
@@ -57,7 +60,7 @@ export default function WalletScreen() {
   const handleRequestCharge = async () => {
     const amount = parseInt(inputAmount);
     if (isNaN(amount) || amount <= 100) {
-      Alert.alert("알림", "최소 100원 이상 입력해주세요.");
+      Alert.alert(t('home.alert_title'), t('wallet.alert_min_amount'));
       return;
     }
 
@@ -73,11 +76,11 @@ export default function WalletScreen() {
           orderId: result.orderId,
           amount: result.amount,
           orderName: result.orderName,
-          customerName: auth().currentUser?.displayName || '사용자',
+          customerName: auth().currentUser?.displayName || t('wallet.default_user_name'),
         }
       });
     } catch (error: any) {
-      Alert.alert("충전 요청 실패", error.message);
+      Alert.alert(t('wallet.alert_fail_charge'), error.message);
     } finally {
       setLoading(false);
       setInputAmount('');
@@ -88,15 +91,15 @@ export default function WalletScreen() {
   const handleRequestWithdraw = () => {
     const amount = parseInt(inputAmount);
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert("알림", "올바른 금액을 입력해주세요.");
+      Alert.alert(t('home.alert_title'), t('wallet.alert_wrong_amount'));
       return;
     }
     if (amount > (wallet?.balance || 0)) {
-      Alert.alert("잔액 부족", "보유 포인트가 부족합니다.");
+      Alert.alert(t('home.alert_title'), t('wallet.alert_insufficient'));
       return;
     }
 
-    Alert.alert("출금 신청", `${amount.toLocaleString()} 포인트를 출금하시겠습니까?`);
+    Alert.alert(t('wallet.withdraw'), t('wallet.confirm_withdraw', { amount: amount.toLocaleString() }));
     setIsWithdrawVisible(false);
     setInputAmount('');
   };
@@ -106,12 +109,12 @@ export default function WalletScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>내 지갑</Text>
+        <Text style={styles.headerTitle}>{t('wallet.title')}</Text>
       </View>
 
       <ScrollView style={styles.scrollContainer}>
         <View style={styles.walletHeader}>
-          <Text style={styles.walletLabel}>포인트 보유 현황</Text>
+          <Text style={styles.walletLabel}>{t('wallet.status')}</Text>
           <Text style={styles.balance}>
             {wallet?.balance?.toLocaleString() || 0} P
           </Text>
@@ -121,29 +124,29 @@ export default function WalletScreen() {
               style={styles.primaryBtn}
               onPress={() => { setInputAmount(''); setIsChargeVisible(true); }}
             >
-              <Text style={styles.primaryBtnText}>충전하기</Text>
+              <Text style={styles.primaryBtnText}>{t('wallet.charge')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.secondaryBtn}
               onPress={() => { setInputAmount(''); setIsWithdrawVisible(true); }}
             >
-              <Text style={styles.secondaryBtnText}>출금</Text>
+              <Text style={styles.secondaryBtnText}>{t('wallet.withdraw')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.historySection}>
-          <Text style={styles.historyTitle}>최근 내역</Text>
+          <Text style={styles.historyTitle}>{t('wallet.history')}</Text>
           {transactions.length === 0 ? (
-            <Text style={styles.historyEmptyText}>거래 내역이 없습니다...</Text>
+            <Text style={styles.historyEmptyText}>{t('wallet.empty')}</Text>
           ) : (
             transactions.map((tx) => (
               <View key={tx.id} style={styles.historyItem}>
                 <View>
                   <Text style={styles.historyName}>
-                    {tx.type === 'deposit' ? '포인트 충전' : 
-                     tx.type === 'withdraw' ? '포인트 출금' :
-                     tx.type === 'stake' ? '목표 예치' : '상금 입금'}
+                    {tx.type === 'deposit' ? t('wallet.type_deposit') :
+                     tx.type === 'withdraw' ? t('wallet.type_withdraw') :
+                     tx.type === 'stake' ? t('wallet.type_stake') : t('wallet.type_reward')}
                   </Text>
                   <Text style={styles.historyDate}>
                     {tx.createdAt?.toDate().toLocaleDateString()}
@@ -166,8 +169,8 @@ export default function WalletScreen() {
         visible={isChargeVisible}
         onClose={() => setIsChargeVisible(false)}
         onSubmit={handleRequestCharge}
-        title="얼마를 충전할까요?"
-        buttonText="충전하기"
+        title={t('wallet.modal_charge_title')}
+        buttonText={t('wallet.charge')}
         amount={inputAmount}
         setAmount={setInputAmount}
       />
@@ -177,8 +180,8 @@ export default function WalletScreen() {
         visible={isWithdrawVisible}
         onClose={() => setIsWithdrawVisible(false)}
         onSubmit={handleRequestWithdraw}
-        title="얼마를 출금할까요?"
-        buttonText="출금하기"
+        title={t('wallet.modal_withdraw_title')}
+        buttonText={t('wallet.withdraw')}
         amount={inputAmount}
         setAmount={setInputAmount}
       />

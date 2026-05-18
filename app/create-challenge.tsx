@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { useTranslation } from 'react-i18next';
+import '@/constants/i18n';
 
 // API
 import { createGroupChallenge } from '@/services/challengeApi';
@@ -11,6 +13,7 @@ const EMOJIS = ['🔥', '💪', '🏃', '🤝', '🎯', '📈', '✨', '🏆', '
 
 export default function CreateChallengeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   
   // 상태 관리
   const [title, setTitle] = useState('');
@@ -36,19 +39,19 @@ export default function CreateChallengeScreen() {
   };
 
   const handleCreate = async () => {
-    if (!title.trim() || !description.trim()) return Alert.alert('알림', '빈칸을 모두 채워주세요.');
+    if (!title.trim() || !description.trim()) return Alert.alert(t('home.alert_title'), t('create.alerts.fill_all'));
     const parsedAmount = parseInt(amount, 10);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return Alert.alert('알림', '올바른 참가비를 입력해주세요.');
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return Alert.alert(t('home.alert_title'), t('create.alerts.invalid_amount'));
 
     try {
       setLoading(true);
       // API 호출 시 시작일과 종료일 전달
       await createGroupChallenge(title, description, parsedAmount, selectedEmoji, startDate, endDate);
-      Alert.alert('성공', '그룹 챌린지 방이 생성되었습니다!', [
-        { text: '확인', onPress: () => router.back() }
+      Alert.alert(t('home.alert_title'), t('create.alerts.success_challenge'), [
+        { text: t('home.alert_title'), onPress: () => router.back() }
       ]);
     } catch (error: any) {
-      Alert.alert('챌린지 생성 실패', error.message);
+      Alert.alert(t('home.alert_error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -60,13 +63,13 @@ export default function CreateChallengeScreen() {
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
           <Ionicons name="arrow-back" size={24} color="#1A1F27" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>그룹 챌린지 생성</Text>
+        <Text style={styles.headerTitle}>{t('create.challenge_title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 50 }}>
         {/* 이모지 선택 */}
-        <Text style={styles.label}>아이콘 선택</Text>
+        <Text style={styles.label}>{t('create.labels.icon')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiList}>
           {EMOJIS.map(emoji => (
             <TouchableOpacity 
@@ -79,35 +82,35 @@ export default function CreateChallengeScreen() {
           ))}
         </ScrollView>
 
-        <Text style={styles.label}>챌린지 이름</Text>
+        <Text style={styles.label}>{t('create.labels.challenge_name')}</Text>
         <TextInput 
           style={styles.input} 
-          placeholder="예) 미라클 모닝 10일 인증" 
+          placeholder={t('create.placeholders.challenge_goal')} 
           value={title}
           onChangeText={setTitle}
         />
 
-        <Text style={styles.label}>챌린지 설명</Text>
+        <Text style={styles.label}>{t('create.labels.description')}</Text>
         <TextInput 
           style={[styles.input, { height: 100, textAlignVertical: 'top' }]} 
-          placeholder="참여 규칙과 인증 방법을 적어주세요." 
+          placeholder={t('create.placeholders.description')} 
           multiline
           value={description}
           onChangeText={setDescription}
         />
 
-        <Text style={styles.label}>1인당 참가비 (포인트)</Text>
+        <Text style={styles.label}>{t('create.labels.amount_challenge')}</Text>
         <TextInput 
           style={styles.input} 
-          placeholder="1,000" 
+          placeholder={t('create.placeholders.amount')} 
           keyboardType="number-pad" 
           value={amount}
           onChangeText={setAmount}
         />
-        <Text style={styles.subText}>실패 시 성공한 사람들에게 포인트가 분배됩니다.</Text>
+        <Text style={styles.subText}>{t('create.help_text.challenge_fee')}</Text>
 
         {/* 기간 설정 섹션 추가 */}
-        <Text style={styles.label}>기간 설정</Text>
+        <Text style={styles.label}>{t('create.labels.period')}</Text>
         <View style={styles.dateRow}>
           {/* 시작일 버튼 */}
           <TouchableOpacity style={styles.dateBtn} onPress={() => setStartPickerVisibility(true)}>
@@ -125,7 +128,7 @@ export default function CreateChallengeScreen() {
 
       <View style={styles.bottomArea}>
         <TouchableOpacity style={styles.primaryBtn} onPress={handleCreate} disabled={loading}>
-          {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>챌린지 방 만들기</Text>}
+          {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>{t('create.buttons.create_challenge')}</Text>}
         </TouchableOpacity>
       </View>
 
@@ -140,8 +143,8 @@ export default function CreateChallengeScreen() {
           setStartPickerVisibility(false);
         }}
         onCancel={() => setStartPickerVisibility(false)}
-        confirmTextIOS="확인"
-        cancelTextIOS="취소"
+        confirmTextIOS={t('home.alert_title')}
+        cancelTextIOS={t('auth.login.divider')}
       />
 
       {/* 종료일 선택 모달 */}
@@ -155,8 +158,8 @@ export default function CreateChallengeScreen() {
           setEndPickerVisibility(false);
         }}
         onCancel={() => setEndPickerVisibility(false)}
-        confirmTextIOS="확인"
-        cancelTextIOS="취소"
+        confirmTextIOS={t('home.alert_title')}
+        cancelTextIOS={t('auth.login.divider')}
       />
     </View>
   );
