@@ -102,7 +102,7 @@ export default function GoalDetailScreen() {
       // 2. 백엔드 호출해서 verifications 컬렉션에 기록 남기기
       await submitVerification(id as string, 'goal', imageUrl);
       
-      Alert.alert(t('tabs.home.alert_title'), t('detail.upload.success_msg'));
+      Alert.alert(t('home.alert_title'), t('detail.upload.success_msg'));
     } catch (error: any) {
       Alert.alert(t('detail.upload.fail_msg'), error.message);
     } finally {

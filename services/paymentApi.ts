@@ -1,6 +1,6 @@
 const TOSS_CLIENT_KEY = process.env.EXPO_PUBLIC_TOSS_CLIENT_KEY;
-const SUCCESS_URL = 'http://localhost:19006/payment/success';
-const FAIL_URL = 'http://localhost:19006/payment/fail';
+const SUCCESS_URL = 'http://121.67.233.19/payment/success';
+const FAIL_URL = 'http://121.67.233.19/payment/fail';
 
 interface PaymentParams {
   orderId: string;

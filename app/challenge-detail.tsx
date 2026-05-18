@@ -88,18 +88,18 @@ export default function ChallengeDetailScreen() {
   // 멤버 초대 로직
   const handleInviteSubmit = async (uid: string) => {
     if(!uid.trim()) {
-      Alert.alert(t('tabs.home.alert_title'), t('detail.leader.invite_prompt'));
+      Alert.alert(t('home.alert_title'), t('detail.leader.invite_prompt'));
       return;
     }
     try {
       setIsInviting(true);
       // challengeId와 입력받은 상대방 UID를 넘겨줌
       await inviteMember(id as string, uid);
-      Alert.alert(t('tabs.home.alert_title'), t('detail.leader.invite_success'));
+      Alert.alert(t('home.alert_title'), t('detail.leader.invite_success'));
       setIsInviteVisible(false);
       setTargetUid('');
     } catch (error: any) {
-      Alert.alert(t('tabs.home.alert_error'), error.message);
+      Alert.alert(t('home.alert_error'), error.message);
     } finally {
       setIsInviting(false);
     }
@@ -142,7 +142,7 @@ export default function ChallengeDetailScreen() {
       // 2. 백엔드 호출해서 verifications 컬렉션에 기록 남기기
       await submitVerification(id as string, 'challenge', imageUrl);
 
-      Alert.alert(t('tabs.home.alert_title'), t('detail.upload.success_msg'));
+      Alert.alert(t('home.alert_title'), t('detail.upload.success_msg'));
     } catch (error: any) {
       Alert.alert(t('detail.upload.fail_msg'), error.message);
     } finally {
