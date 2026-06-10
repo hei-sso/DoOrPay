@@ -22,15 +22,17 @@ exports.createVerification = functions
         });
       }
 
-      // 프론트가 group으로 보내도 백엔드는 challenge로 정규화해서 처리
+      // 프론트가 group으로 보내고, 과거 호환용 challenge도 들어올 수 있으므로
+      // 백엔드 저장 타입은 문서 규격에 맞춰 goal / group으로 정규화합니다.
       let resolvedType = type;
-      if (resolvedType === "group") {
-        resolvedType = "challenge";
+
+      if (resolvedType === "challenge") {
+        resolvedType = "group";
       }
 
-      if (resolvedType && !["goal", "challenge"].includes(resolvedType)) {
+      if (resolvedType && !["goal", "group"].includes(resolvedType)) {
         return res.status(400).json({
-          error: "type must be goal, group, or challenge",
+          error: "type must be goal or group",
         });
       }
 
@@ -44,7 +46,7 @@ exports.createVerification = functions
           const challengeDoc = await db.collection("challenges").doc(targetId).get();
 
           if (challengeDoc.exists) {
-            resolvedType = "challenge";
+            resolvedType = "group";
           } else {
             return res.status(403).json({
               error: "Invalid targetId or not a valid type",
@@ -85,7 +87,6 @@ exports.createVerification = functions
       return res.status(200).json({
         message: "Verification created successfully",
         verificationId: verificationRef.id,
-        type: resolvedType,
         status: "pending",
       });
     } catch (error) {
