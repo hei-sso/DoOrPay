@@ -1,6 +1,7 @@
-const TOSS_CLIENT_KEY = process.env.EXPO_PUBLIC_TOSS_CLIENT_KEY;
-const SUCCESS_URL = 'doorpay-success://';
-const FAIL_URL = 'doorpay-fail://';
+const TOSS_CLIENT_KEY = "test_ck_Poxy1XQL8RldOjMpG264V7nO5Wml"; 
+
+const SUCCESS_URL = 'doorpay://payment/success';
+const FAIL_URL = 'doorpay://payment/fail';
 
 interface PaymentParams {
   orderId: string;
@@ -17,20 +18,25 @@ export function generatePaymentHTML(params: PaymentParams): string {
     <html>
       <head>
         <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="https://js.tosspayments.com/v1/payment"></script>
       </head>
       <body>
         <script>
-          const tossPayments = TossPayments('${TOSS_CLIENT_KEY}');
-          tossPayments.requestPayment('카드', {
-            amount: ${amount},
-            orderId: '${orderId}',
-            orderName: '${orderName}',
-            customerName: '${customerName}',
-            successUrl: '${SUCCESS_URL}',
-            failUrl: '${FAIL_URL}',
-            appScheme: '${appScheme}'
-          });
+          try {
+            const tossPayments = TossPayments('${TOSS_CLIENT_KEY}');
+            tossPayments.requestPayment('카드', {
+              amount: ${amount},
+              orderId: '${orderId}',
+              orderName: '${orderName}',
+              customerName: '${customerName}',
+              successUrl: '${SUCCESS_URL}',
+              failUrl: '${FAIL_URL}',
+              appScheme: '${appScheme}'
+            });
+          } catch (e) {
+            alert('토스 초기화 에러: ' + e.message);
+          }
         </script>
       </body>
     </html>
@@ -53,9 +59,9 @@ export function parseSuccessURL(url: string): PaymentSuccessResult {
 }
 
 export function isSuccessURL(url: string): boolean {
-  return url.startsWith('doorpay-success://');
+  return url.startsWith('doorpay://payment/success');
 }
 
 export function isFailURL(url: string): boolean {
-  return url.startsWith('doorpay-fail://');
+  return url.startsWith('doorpay://payment/fail');
 }

@@ -12,6 +12,8 @@ export default function RootLayout() {
       <Stack.Screen name="challenge-detail" />
       <Stack.Screen name="verification-feed"/>
       <Stack.Screen name="payment" />
+      <Stack.Screen name="payment/success" />
+      <Stack.Screen name="payment/fail" />
       <Stack.Screen name="settings" />
     </Stack>
   );

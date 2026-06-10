@@ -30,24 +30,18 @@ export default function PaymentScreen() {
     appScheme: 'doorpay://'
   });
 
-  const handleNavigationStateChange = async (navState: WebViewNavigation) => {
-    if (isSuccessURL(navState.url)) {
-      const { paymentKey, orderId, amount } = parseSuccessURL(navState.url);
-      try {
-        await confirmChargePayment({
-          paymentKey: paymentKey!,
-          orderId: orderId!,
-          amount: Number(amount),
-        });
-        router.replace('/wallet');
-      } catch (e) {
-        Alert.alert(t('payment.alerts.error_title'), t('payment.alerts.error_msg'));
-        router.back();
-      }
-    }
-
-    if (isFailURL(navState.url)) {
-      Alert.alert(t('payment.alerts.fail_title'), t('payment.alerts.fail_msg'));
+  // 비동기 처리용 함수를 별도로 분리 (안전성 확보)
+  const handlePaymentSuccess = async (url: string) => {
+    const { paymentKey, orderId, amount: successAmount } = parseSuccessURL(url);
+    try {
+      await confirmChargePayment({
+        paymentKey: paymentKey!,
+        orderId: orderId!,
+        amount: Number(successAmount),
+      });
+      router.replace('/wallet');
+    } catch (e) {
+      Alert.alert(t('payment.alerts.error_title'), t('payment.alerts.error_msg'));
       router.back();
     }
   };
@@ -55,49 +49,34 @@ export default function PaymentScreen() {
   return (
     <WebView
       source={{ html }}
-      // 앱 스킴 잡기
+      style={{ flex: 1 }}
+      originWhitelist={['*']}
+      javaScriptEnabled={true}
+      domStorageEnabled={true}
+      startInLoadingState={true}
+      renderLoading={() => <ActivityIndicator size="large" style={{ flex: 1 }} />}
+      
       onShouldStartLoadWithRequest={(request) => {
         const { url } = request;
 
-        // 1. 토스 결제 성공 시 웹뷰가 링크를 가로채서 즉시 서버 통신 진행
-        if (isSuccessURL(url)) {
-          const { paymentKey, orderId, amount: successAmount } = parseSuccessURL(url);
-          
-          // 비동기 즉시 실행 함수(IIFE)로 서버 승인 API 호출
-          (async () => {
-            try {
-              await confirmChargePayment({
-                paymentKey: paymentKey!,
-                orderId: orderId!,
-                amount: Number(successAmount),
-              });
-              router.replace('/wallet');
-            } catch (e) {
-              Alert.alert(t('payment.alerts.error_title'), t('payment.alerts.error_msg'));
-              router.back();
-            }
-          })();
-
-          return false; // false를 리턴하여 외부로 unmatched route가 터지는 걸 차단!
+        // 🌟 [핵심 추가] 결제가 끝나고 우리 앱 주소(doorpay://)로 리다이렉트 될 때
+        // 웹뷰가 직접 열지 못하게 차단하고, OS(스마트폰 시스템)로 주소를 던집니다.
+        if (url.startsWith('doorpay://')) {
+          Linking.openURL(url).catch(() => {
+            Alert.alert("에러", "앱으로 돌아갈 수 없습니다.");
+          });
+          return false; // 🌟 중요: false를 리턴하여 웹뷰 내부의 'unknown url scheme' 에러를 원천 차단합니다!
         }
 
-        // 2. 토스 결제 실패/취소 시 가로채기
-        if (isFailURL(url)) {
-          Alert.alert(t('payment.alerts.fail_title'), t('payment.alerts.fail_msg'));
-          router.back();
-          return false; // 차단
-        }
-
-        // 3. 카드사 외부 앱 실행 로직
+        // 기존 외부 카드사 앱 실행 스킴 처리 (그대로 유지)
         if (isAppScheme(url)) {
-          // [Android] intent: 스킴 특수 처리
+          // [Android] intent: 스킴 처리
           if (Platform.OS === 'android' && url.startsWith('intent:')) {
             const packageMatch = url.match(/package=([^;]+)/);
             const schemeMatch = url.match(/scheme=([^;]+)/);
 
             if (packageMatch && schemeMatch) {
               const customSchemeUrl = url.replace('intent://', `${schemeMatch[1]}://`).split('#Intent')[0];
-              
               Linking.openURL(customSchemeUrl).catch(() => {
                 Linking.openURL(`market://details?id=${packageMatch[1]}`);
               });
@@ -105,7 +84,7 @@ export default function PaymentScreen() {
             }
           }
 
-          // [iOS] 및 일반 앱 스킴 실행
+          // [iOS] 및 기타 일반 앱 스킴 실행
           Linking.openURL(url).catch(() => {
             Alert.alert(t('home.alert_title'), t('payment.alerts.app_error'));
           });
@@ -113,12 +92,6 @@ export default function PaymentScreen() {
         }    
         return true;
       }}
-      style={{ flex: 1 }}
-      originWhitelist={['*']}
-      javaScriptEnabled={true}
-      domStorageEnabled={true}
-      startInLoadingState={true}
-      renderLoading={() => <ActivityIndicator size="large" style={{ flex: 1 }} />}
     />
   );
 }
