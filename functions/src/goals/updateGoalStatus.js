@@ -34,9 +34,6 @@ exports.updateGoalStatus = functions
 
       const goalData = goalDoc.data();
 
-      if (goalData.type !== "goal") {
-        return res.status(400).json({ error: "Invalid goal document type" });
-      }
 
       if (goalData.userId !== uid) {
         return res.status(403).json({ error: "Forbidden" });

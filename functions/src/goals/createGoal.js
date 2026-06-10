@@ -75,7 +75,6 @@ exports.createGoal = functions
 
         transaction.set(goalRef, {
           goalId: goalRef.id,
-          type: "goal",
           userId: uid,
           userNickname: userData.nickname || "",
           title: title.trim(),
@@ -94,9 +93,10 @@ exports.createGoal = functions
           userId: uid,
           goalId: goalRef.id,
           amount: parsedStakeAmount,
-          type: "lock",
-          status: "done",
-          description: "목표 생성 시 포인트 잠금",
+          type: "stake",
+          status: "approved",
+          referenceId: goalRef.id,
+          description: "목표 생성 시 참가비 예치",
           createdAt: new Date(),
         });
       });
