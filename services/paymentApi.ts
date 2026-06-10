@@ -1,6 +1,6 @@
 const TOSS_CLIENT_KEY = process.env.EXPO_PUBLIC_TOSS_CLIENT_KEY;
-const SUCCESS_URL = 'doorpay://payment/success';
-const FAIL_URL = 'doorpay://payment/fail';
+const SUCCESS_URL = 'doorpay-success://';
+const FAIL_URL = 'doorpay-fail://';
 
 interface PaymentParams {
   orderId: string;
@@ -53,9 +53,9 @@ export function parseSuccessURL(url: string): PaymentSuccessResult {
 }
 
 export function isSuccessURL(url: string): boolean {
-  return url.includes('/payment/success');
+  return url.startsWith('doorpay-success://');
 }
 
 export function isFailURL(url: string): boolean {
-  return url.includes('/payment/fail');
+  return url.startsWith('doorpay-fail://');
 }

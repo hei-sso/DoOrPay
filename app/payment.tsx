@@ -55,11 +55,40 @@ export default function PaymentScreen() {
   return (
     <WebView
       source={{ html }}
-      onNavigationStateChange={handleNavigationStateChange}
-      // 외부 앱 실행(Scheme) 처리 로직
+      // 앱 스킴 잡기
       onShouldStartLoadWithRequest={(request) => {
         const { url } = request;
 
+        // 1. 토스 결제 성공 시 웹뷰가 링크를 가로채서 즉시 서버 통신 진행
+        if (isSuccessURL(url)) {
+          const { paymentKey, orderId, amount: successAmount } = parseSuccessURL(url);
+          
+          // 비동기 즉시 실행 함수(IIFE)로 서버 승인 API 호출
+          (async () => {
+            try {
+              await confirmChargePayment({
+                paymentKey: paymentKey!,
+                orderId: orderId!,
+                amount: Number(successAmount),
+              });
+              router.replace('/wallet');
+            } catch (e) {
+              Alert.alert(t('payment.alerts.error_title'), t('payment.alerts.error_msg'));
+              router.back();
+            }
+          })();
+
+          return false; // false를 리턴하여 외부로 unmatched route가 터지는 걸 차단!
+        }
+
+        // 2. 토스 결제 실패/취소 시 가로채기
+        if (isFailURL(url)) {
+          Alert.alert(t('payment.alerts.fail_title'), t('payment.alerts.fail_msg'));
+          router.back();
+          return false; // 차단
+        }
+
+        // 3. 카드사 외부 앱 실행 로직
         if (isAppScheme(url)) {
           // [Android] intent: 스킴 특수 처리
           if (Platform.OS === 'android' && url.startsWith('intent:')) {
@@ -76,7 +105,7 @@ export default function PaymentScreen() {
             }
           }
 
-          // [iOS] 및 일반 앱 스킴 실행 (안드로이드의 커스텀 스킴 포함)
+          // [iOS] 및 일반 앱 스킴 실행
           Linking.openURL(url).catch(() => {
             Alert.alert(t('home.alert_title'), t('payment.alerts.app_error'));
           });
