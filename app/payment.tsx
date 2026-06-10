@@ -59,21 +59,18 @@ export default function PaymentScreen() {
       onShouldStartLoadWithRequest={(request) => {
         const { url } = request;
 
-        // 1. 결제 성공 가로채기
-        if (isSuccessURL(url)) {
-          handlePaymentSuccess(url);
-          return false; 
+        // 🌟 [핵심 추가] 결제가 끝나고 우리 앱 주소(doorpay://)로 리다이렉트 될 때
+        // 웹뷰가 직접 열지 못하게 차단하고, OS(스마트폰 시스템)로 주소를 던집니다.
+        if (url.startsWith('doorpay://')) {
+          Linking.openURL(url).catch(() => {
+            Alert.alert("에러", "앱으로 돌아갈 수 없습니다.");
+          });
+          return false; // 🌟 중요: false를 리턴하여 웹뷰 내부의 'unknown url scheme' 에러를 원천 차단합니다!
         }
 
-        // 2. 결제 실패 가로채기
-        if (isFailURL(url)) {
-          Alert.alert(t('payment.alerts.fail_title'), t('payment.alerts.fail_msg'));
-          router.back();
-          return false; 
-        }
-
-        // 3. 외부 카드사 앱 실행 스킴 처리
+        // 기존 외부 카드사 앱 실행 스킴 처리 (그대로 유지)
         if (isAppScheme(url)) {
+          // [Android] intent: 스킴 처리
           if (Platform.OS === 'android' && url.startsWith('intent:')) {
             const packageMatch = url.match(/package=([^;]+)/);
             const schemeMatch = url.match(/scheme=([^;]+)/);
@@ -87,6 +84,7 @@ export default function PaymentScreen() {
             }
           }
 
+          // [iOS] 및 기타 일반 앱 스킴 실행
           Linking.openURL(url).catch(() => {
             Alert.alert(t('home.alert_title'), t('payment.alerts.app_error'));
           });

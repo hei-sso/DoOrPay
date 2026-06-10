@@ -1,7 +1,7 @@
 const TOSS_CLIENT_KEY = "test_ck_Poxy1XQL8RldOjMpG264V7nO5Wml"; 
 
-const SUCCESS_URL = 'doorpay-success://';
-const FAIL_URL = 'doorpay-fail://';
+const SUCCESS_URL = 'doorpay://payment/success';
+const FAIL_URL = 'doorpay://payment/fail';
 
 interface PaymentParams {
   orderId: string;
@@ -59,9 +59,9 @@ export function parseSuccessURL(url: string): PaymentSuccessResult {
 }
 
 export function isSuccessURL(url: string): boolean {
-  return url.startsWith('doorpay-success://');
+  return url.startsWith('doorpay://payment/success');
 }
 
 export function isFailURL(url: string): boolean {
-  return url.startsWith('doorpay-fail://');
+  return url.startsWith('doorpay://payment/fail');
 }
