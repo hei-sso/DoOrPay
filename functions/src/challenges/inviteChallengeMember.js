@@ -49,9 +49,9 @@ exports.inviteChallengeMember = functions
 
       const challengeData = challengeDoc.data();
 
-      if (challengeData.type !== "challenge") {
+      if (challengeData.type !== "group") {
         return res.status(400).json({
-          error: "Invalid challenge document type",
+          error: "Invalid group document type",
         });
       }
 
@@ -98,7 +98,7 @@ exports.inviteChallengeMember = functions
         fromNickname,
         toUid,
         status: "pending",
-        type: "challenge",
+        type: "group",
         createdAt: new Date(),
       });
 
@@ -107,7 +107,7 @@ exports.inviteChallengeMember = functions
         invitationId: invitationRef.id,
         challengeId,
         toUid,
-        type: "challenge",
+        type: "group",
       });
     } catch (error) {
       console.error("inviteChallengeMember error:", error);

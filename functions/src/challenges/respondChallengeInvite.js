@@ -90,8 +90,8 @@ exports.respondChallengeInvite = functions
         const challengeData = challengeDoc.data();
         const userData = userDoc.data();
 
-        if (challengeData.type !== "challenge") {
-          const error = new Error("Invalid challenge document type");
+        if (challengeData.type !== "group") {
+          const error = new Error("Invalid group document type");
           error.statusCode = 400;
           throw error;
         }

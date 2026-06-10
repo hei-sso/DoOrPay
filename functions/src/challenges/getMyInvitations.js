@@ -27,7 +27,7 @@ exports.getMyInvitations = functions
           fromNickname: data.fromNickname || "",
           toUid: data.toUid || "",
           status: data.status || "pending",
-          type: data.type || "challenge",
+          type: data.type || "group",
           createdAt: data.createdAt || null,
           respondedAt: data.respondedAt || null,
         };

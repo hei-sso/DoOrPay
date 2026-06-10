@@ -75,7 +75,7 @@ exports.createChallenge = functions
 
         transaction.set(challengeRef, {
           id: challengeRef.id,
-          type: "challenge",
+          type: "group",
           title: title.trim(),
           description: description ? description.trim() : "",
           creatorId: uid,
@@ -113,7 +113,7 @@ exports.createChallenge = functions
       return res.status(200).json({
         message: "Challenge created successfully",
         challengeId: challengeRef.id,
-        type: "challenge",
+        type: "group",
         stakeAmount: parsedStakeAmount,
       });
     } catch (error) {
