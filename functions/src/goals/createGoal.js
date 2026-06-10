@@ -75,6 +75,7 @@ exports.createGoal = functions
 
         transaction.set(goalRef, {
           goalId: goalRef.id,
+          type: "goal",
           userId: uid,
           userNickname: userData.nickname || "",
           title: title.trim(),
