@@ -22,11 +22,15 @@ exports.createVerification = functions
         });
       }
 
-      let resolvedType = type; // 프론트가 보낸 type 사용
+      // 프론트가 group으로 보내도 백엔드는 challenge로 정규화해서 처리
+      let resolvedType = type;
+      if (resolvedType === "group") {
+        resolvedType = "challenge";
+      }
 
       if (resolvedType && !["goal", "challenge"].includes(resolvedType)) {
         return res.status(400).json({
-          error: "type must be goal or challenge",
+          error: "type must be goal, group, or challenge",
         });
       }
 
@@ -69,6 +73,8 @@ exports.createVerification = functions
         id: verificationRef.id,
         userId: uid,
         targetId,
+        type: resolvedType,
+        targetType: resolvedType,
         imageUrl: imageUrl,       // 프론트가 준 다운로드 링크
         storagePath: storagePath, // AI가 파일을 찾을 수 있는 진짜 스토리지 경로!
         status: "pending",        // 이 상태로 저장되면 새로운 트리거가 감지하고 AI를 돌립니다.
@@ -79,6 +85,7 @@ exports.createVerification = functions
       return res.status(200).json({
         message: "Verification created successfully",
         verificationId: verificationRef.id,
+        type: resolvedType,
         status: "pending",
       });
     } catch (error) {
