@@ -58,6 +58,7 @@ exports.createChallenge = functions
 
         const userData = userDoc.data();
         const wallet = userData.wallet || { balance: 0, locked: 0 };
+        const nickname = userData.nickname || "";
 
         if (Number(wallet.balance || 0) < parsedStakeAmount) {
           const error = new Error("Insufficient balance");
@@ -74,8 +75,7 @@ exports.createChallenge = functions
         });
 
         transaction.set(challengeRef, {
-          id: challengeRef.id,
-          type: "group",
+          challengeId: challengeRef.id,
           title: title.trim(),
           description: description ? description.trim() : "",
           creatorId: uid,
@@ -91,21 +91,24 @@ exports.createChallenge = functions
         });
 
         transaction.set(memberRef, {
-          userId: uid,
-          role: "owner",
-          status: "active",
+          nickname,
+          role: "leader",
+          status: "joined",
+          stakeAmount: parsedStakeAmount,
           failCount: 0,
+          stakedAt: new Date(),
           joinedAt: new Date(),
         });
 
         transaction.set(txRef, {
           txId: txRef.id,
           userId: uid,
-          challengeId: challengeRef.id,
+          type: "stake",
           amount: parsedStakeAmount,
-          type: "challenge_lock",
-          status: "done",
-          description: "그룹 챌린지 생성 시 참가비 잠금",
+          status: "approved",
+          referenceId: challengeRef.id,
+          challengeId: challengeRef.id,
+          description: "그룹 챌린지 생성 시 참가비 예치",
           createdAt: new Date(),
         });
       });
@@ -113,7 +116,6 @@ exports.createChallenge = functions
       return res.status(200).json({
         message: "Challenge created successfully",
         challengeId: challengeRef.id,
-        type: "group",
         stakeAmount: parsedStakeAmount,
       });
     } catch (error) {

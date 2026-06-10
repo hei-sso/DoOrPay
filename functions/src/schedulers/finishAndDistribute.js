@@ -5,16 +5,15 @@ const db = admin.firestore();
 
 /**
  * [최종 정산 스케줄러]
- * 매일 00:30 실행 (dailyGoalCheck가 00:00에 끝난 후 안전하게 실행)
- * 종료일이 지난 목표/챌린지를 찾아 성공 여부를 판정하고 포인트를 분배합니다.
+ * 매일 00:30 실행. 종료일이 지난 개인 목표/그룹 챌린지를 정산합니다.
  */
 exports.finishAndDistribute = functions
   .region("asia-northeast3")
   .pubsub.schedule("30 0 * * *")
   .timeZone("Asia/Seoul")
-  .onRun(async (context) => {
-    console.log("=== finishAndDistribute (정산 스케줄러) 시작 ===");
-    
+  .onRun(async () => {
+    console.log("=== finishAndDistribute 시작 ===");
+
     const now = new Date();
 
     try {
@@ -24,11 +23,10 @@ exports.finishAndDistribute = functions
       console.error("정산 스케줄러 실행 중 치명적 오류:", error);
     }
 
-    console.log("=== finishAndDistribute (정산 스케줄러) 종료 ===");
+    console.log("=== finishAndDistribute 종료 ===");
     return null;
   });
 
-// 1. 개인 목표(Goal) 종료 및 정산 로직
 async function settlePersonalGoals(now) {
   const goalsSnapshot = await db
     .collection("goals")
@@ -44,37 +42,38 @@ async function settlePersonalGoals(now) {
     const goal = doc.data();
     const goalRef = doc.ref;
     const userRef = db.collection("users").doc(goal.userId);
+    const stakeAmount = Number(goal.stakeAmount || 0);
 
-    // [성공 기준 변경]: 3번 이상 실패하면 실패 (즉, 3 미만이면 성공!)
-    const isSuccess = (goal.failCount || 0) < 3;
-    const finalStatus = isSuccess ? "completed" : "failed";
+    const isSuccess = Number(goal.failCount || 0) < 3;
+    const finalStatus = isSuccess ? "success" : "fail";
 
-    // 1. 목표 상태 업데이트
     batch.update(goalRef, {
       status: finalStatus,
+      finishedAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    // 2. 지갑(Wallet) 업데이트
     if (isSuccess) {
       batch.update(userRef, {
-        "wallet.locked": admin.firestore.FieldValue.increment(-goal.stakeAmount),
-        "wallet.balance": admin.firestore.FieldValue.increment(goal.stakeAmount),
+        "wallet.locked": admin.firestore.FieldValue.increment(-stakeAmount),
+        "wallet.balance": admin.firestore.FieldValue.increment(stakeAmount),
       });
     } else {
       batch.update(userRef, {
-        "wallet.locked": admin.firestore.FieldValue.increment(-goal.stakeAmount),
+        "wallet.locked": admin.firestore.FieldValue.increment(-stakeAmount),
       });
     }
 
-    // 3. 거래 내역(Transaction) 기록
     const txRef = db.collection("transactions").doc();
     batch.set(txRef, {
+      txId: txRef.id,
       userId: goal.userId,
-      targetId: doc.id,
-      targetType: "goal",
-      type: isSuccess ? "refund" : "penalty",
-      amount: goal.stakeAmount,
+      type: isSuccess ? "reward" : "stake",
+      amount: stakeAmount,
+      status: "approved",
+      referenceId: doc.id,
+      goalId: doc.id,
+      description: isSuccess ? "목표 성공 포인트 반환" : "목표 실패 예치금 차감",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   }
@@ -83,7 +82,6 @@ async function settlePersonalGoals(now) {
   console.log(`[개인 목표] ${goalsSnapshot.size}개 정산 완료`);
 }
 
-// 2. 그룹 챌린지(Challenge) 종료 및 1/N 상금 분배 로직
 async function settleGroupChallenges(now) {
   const challengesSnapshot = await db
     .collection("challenges")
@@ -97,86 +95,99 @@ async function settleGroupChallenges(now) {
     const challenge = doc.data();
     const challengeId = doc.id;
     const challengeRef = doc.ref;
-    
-    await db.runTransaction(async (transaction) => {
-      const membersSnapshot = await transaction.get(
-        db.collection("challenges").doc(challengeId).collection("members")
-      );
+    const stakeAmount = Number(challenge.stakeAmount || 0);
 
-      let successMembers = [];
-      let failedMembers = [];
+    await db.runTransaction(async (transaction) => {
+      const membersSnapshot = await transaction.get(challengeRef.collection("members"));
+
+      const successMemberIds = [];
+      const failedMemberIds = [];
       let totalPenaltyPool = 0;
 
       membersSnapshot.forEach((mDoc) => {
         const member = mDoc.data();
-        
-        // [성공 기준 변경]: 3번 이상 실패하면 실패 (3 미만이면 성공)
-        if ((member.failCount || 0) < 3) {
-          successMembers.push(member.userId);
+        if (member.status !== "joined") return;
+
+        if (Number(member.failCount || 0) < 3) {
+          successMemberIds.push(mDoc.id);
         } else {
-          failedMembers.push(member.userId);
-          totalPenaltyPool += challenge.stakeAmount;
+          failedMemberIds.push(mDoc.id);
+          totalPenaltyPool += stakeAmount;
         }
       });
 
-      // 2. 성공한 사람들에게 돌아갈 1/N 추가 상금 계산
-      let bonusPerWinner = 0;
-      if (successMembers.length > 0 && totalPenaltyPool > 0) {
-        bonusPerWinner = Math.floor(totalPenaltyPool / successMembers.length);
-      }
+      const bonusPerWinner =
+        successMemberIds.length > 0 && totalPenaltyPool > 0
+          ? Math.floor(totalPenaltyPool / successMemberIds.length)
+          : 0;
 
-      // 3. 챌린지 상태를 completed로 변경
       transaction.update(challengeRef, {
-        status: "completed",
-        successCount: successMembers.length,
-        failedCount: failedMembers.length,
-        bonusPerWinner: bonusPerWinner,
+        status: "closed",
+        successCount: successMemberIds.length,
+        failedCount: failedMemberIds.length,
+        bonusPerWinner,
+        closedAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      // 4. 유저별 지갑 업데이트 및 멤버 상태 변경
       membersSnapshot.forEach((mDoc) => {
         const member = mDoc.data();
-        const memberRef = mDoc.ref;
-        const userRef = db.collection("users").doc(member.userId);
-        const txRef = db.collection("transactions").doc();
+        if (member.status !== "joined") return;
 
-        const isSuccess = successMembers.includes(member.userId);
+        const memberId = mDoc.id;
+        const memberRef = mDoc.ref;
+        const userRef = db.collection("users").doc(memberId);
+        const txRef = db.collection("transactions").doc();
+        const isSuccess = successMemberIds.includes(memberId);
 
         if (isSuccess) {
-          const totalReward = challenge.stakeAmount + bonusPerWinner;
+          const totalReward = stakeAmount + bonusPerWinner;
           transaction.update(userRef, {
-            "wallet.locked": admin.firestore.FieldValue.increment(-challenge.stakeAmount),
+            "wallet.locked": admin.firestore.FieldValue.increment(-stakeAmount),
             "wallet.balance": admin.firestore.FieldValue.increment(totalReward),
           });
-          transaction.update(memberRef, { status: "success", reward: totalReward });
+          transaction.update(memberRef, {
+            result: "success",
+            reward: totalReward,
+            settledAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
 
           transaction.set(txRef, {
-            userId: member.userId,
-            targetId: challengeId,
-            targetType: "challenge",
+            txId: txRef.id,
+            userId: memberId,
             type: "reward",
             amount: totalReward,
+            status: "approved",
+            referenceId: challengeId,
+            challengeId,
+            description: "그룹 챌린지 성공 보상",
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
           });
         } else {
           transaction.update(userRef, {
-            "wallet.locked": admin.firestore.FieldValue.increment(-challenge.stakeAmount),
+            "wallet.locked": admin.firestore.FieldValue.increment(-stakeAmount),
           });
-          transaction.update(memberRef, { status: "failed", reward: 0 });
+          transaction.update(memberRef, {
+            result: "fail",
+            reward: 0,
+            settledAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
 
           transaction.set(txRef, {
-            userId: member.userId,
-            targetId: challengeId,
-            targetType: "challenge",
-            type: "penalty",
-            amount: challenge.stakeAmount,
+            txId: txRef.id,
+            userId: memberId,
+            type: "stake",
+            amount: stakeAmount,
+            status: "approved",
+            referenceId: challengeId,
+            challengeId,
+            description: "그룹 챌린지 실패 예치금 차감",
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
           });
         }
       });
     });
 
-    console.log(`[그룹 챌린지] ${challengeId} 정산 완료 (상금 풀: ${challenge.stakeAmount * failedMembers.length}, 승자 보너스: ${bonusPerWinner})`);
+    console.log(`[그룹 챌린지] ${challengeId} 정산 완료`);
   }
 }

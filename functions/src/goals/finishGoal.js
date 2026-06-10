@@ -45,11 +45,6 @@ exports.finishGoal = functions
         const goalData = goalDoc.data();
         const userData = userDoc.data();
 
-        if (goalData.type !== "goal") {
-          const error = new Error("Invalid goal document type");
-          error.statusCode = 400;
-          throw error;
-        }
 
         if (goalData.userId !== uid) {
           const error = new Error("Forbidden");
@@ -86,8 +81,9 @@ exports.finishGoal = functions
             txId: unlockTxRef.id,
             userId: uid,
             amount: stakeAmount,
-            type: "unlock",
-            status: "done",
+            type: "reward",
+            status: "approved",
+            referenceId: goalId,
             goalId,
             description: "목표 성공 포인트 반환",
             createdAt: new Date(),
@@ -108,10 +104,11 @@ exports.finishGoal = functions
             txId: penaltyTxRef.id,
             userId: uid,
             amount: stakeAmount,
-            type: "penalty",
-            status: "done",
+            type: "stake",
+            status: "approved",
+            referenceId: goalId,
             goalId,
-            description: "목표 실패 포인트 차감",
+            description: "목표 실패 예치금 차감",
             createdAt: new Date(),
           });
         }

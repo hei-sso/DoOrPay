@@ -25,12 +25,14 @@ exports.inviteChallengeMember = functions
 
       const challengeRef = db.collection("challenges").doc(challengeId);
       const targetUserRef = db.collection("users").doc(toUid);
-      const memberRef = challengeRef.collection("members").doc(toUid);
+      const leaderMemberRef = challengeRef.collection("members").doc(uid);
+      const targetMemberRef = challengeRef.collection("members").doc(toUid);
 
-      const [challengeDoc, targetUserDoc, memberDoc] = await Promise.all([
+      const [challengeDoc, targetUserDoc, leaderMemberDoc, targetMemberDoc] = await Promise.all([
         challengeRef.get(),
         targetUserRef.get(),
-        memberRef.get(),
+        leaderMemberRef.get(),
+        targetMemberRef.get(),
       ]);
 
       if (!challengeDoc.exists) {
@@ -41,29 +43,25 @@ exports.inviteChallengeMember = functions
         return res.status(404).json({ error: "Target user not found" });
       }
 
-      if (memberDoc.exists) {
-        return res.status(409).json({
-          error: "User is already participating in this challenge",
-        });
-      }
-
       const challengeData = challengeDoc.data();
+      const leaderMemberData = leaderMemberDoc.exists ? leaderMemberDoc.data() : null;
+      const targetMemberData = targetMemberDoc.exists ? targetMemberDoc.data() : null;
 
-      if (challengeData.type !== "group") {
-        return res.status(400).json({
-          error: "Invalid group document type",
-        });
-      }
-
-      if (challengeData.creatorId !== uid) {
+      if (challengeData.creatorId !== uid || !leaderMemberData || leaderMemberData.role !== "leader") {
         return res.status(403).json({
-          error: "Only the challenge owner can invite members",
+          error: "Only the challenge leader can invite members",
         });
       }
 
       if (challengeData.status !== "recruiting") {
         return res.status(400).json({
           error: "Invitations are only allowed while recruiting",
+        });
+      }
+
+      if (targetMemberData && targetMemberData.status !== "rejected") {
+        return res.status(409).json({
+          error: "User is already invited or participating in this challenge",
         });
       }
 
@@ -88,18 +86,33 @@ exports.inviteChallengeMember = functions
           ? inviterData.nickname
           : "사용자";
 
+      const targetUserData = targetUserDoc.data();
+      const targetNickname =
+        targetUserData.nickname && targetUserData.nickname.trim()
+          ? targetUserData.nickname
+          : "";
+
       const invitationRef = db.collection("invitations").doc();
 
-      await invitationRef.set({
-        invitationId: invitationRef.id,
-        challengeId,
-        challengeTitle: challengeData.title || "",
-        fromUid: uid,
-        fromNickname,
-        toUid,
-        status: "pending",
-        type: "group",
-        createdAt: new Date(),
+      await db.runTransaction(async (transaction) => {
+        transaction.set(invitationRef, {
+          invitationId: invitationRef.id,
+          challengeId,
+          challengeTitle: challengeData.title || "",
+          fromUid: uid,
+          fromNickname,
+          toUid,
+          status: "pending",
+          createdAt: new Date(),
+        });
+
+        transaction.set(targetMemberRef, {
+          nickname: targetNickname,
+          role: "member",
+          status: "invited",
+          invitedAt: new Date(),
+          invitationId: invitationRef.id,
+        }, { merge: true });
       });
 
       return res.status(200).json({
@@ -107,7 +120,6 @@ exports.inviteChallengeMember = functions
         invitationId: invitationRef.id,
         challengeId,
         toUid,
-        type: "group",
       });
     } catch (error) {
       console.error("inviteChallengeMember error:", error);
