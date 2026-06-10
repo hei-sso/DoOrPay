@@ -26,7 +26,8 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.flint.doorpay",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",
